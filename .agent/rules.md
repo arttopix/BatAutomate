@@ -15,6 +15,8 @@
    - ระบบ Telemetry, Logging และ Dashboard ต้องเก็บข้อมูลในมุมมองธุรกิจ (จำนวน Transaction, Hours Saved, Cost Saved) เสมอ ไม่ใช่เก็บเฉพาะ Technical Stack Trace
 4. **Local AI & Privacy Ready:**
    - การเพิ่มความสามารถด้าน AI ต้องมุ่งเน้น **Small Language Models (SLM)** ที่รันบน **CPU** ในเครื่องได้ (เช่น Qwen 2.5, Llama 3.2 ผ่าน `llama-cpp-python` / `onnxruntime`) เพื่อความปลอดภัยของข้อมูลและไม่มีค่า API Token
+5. **Sponsorship & Donation Roadmap:**
+   - ในอนาคตมีแผนเปิดรับเงินบริจาคและผู้สนับสนุน (GitHub Sponsors, Open Collective, Buy Me a Coffee) เพื่อความยั่งยืนของโครงการ แต่ในระยะนี้ (Phase ปัจจุบัน) **ยังไม่เปิดรับ** ให้มุ่งเน้นการพัฒนา Core และ Feature หลักก่อน
 
 ---
 
