@@ -1,78 +1,100 @@
-# 🦇 BAT Automate
+# BAT Automate
 
 > **Open-Source, Python-Powered Enterprise RPA Platform**  
-> ปลดล็อกค่าลิขสิทธิ์ RPA สูงลิ่ว ด้วยระบบอัตโนมัติแบบครบวงจร พร้อม Business-First Dashboard และ Unattended Robot ฟรี 100%
+> Eliminate soaring commercial RPA licensing costs with an end-to-end automation suite, business-first ROI dashboard, and 100% free unattended robots.
 
 ---
 
-## 🌟 จุดเด่นของ BAT Automate (Key Highlights)
+## Key Highlights
 
-- **Zero-License Dependency:** ไม่จำเป็นต้องมี Microsoft 365, ไม่ต้องติดตั้ง Microsoft Excel สำหรับงานจัดการไฟล์สเปรดชีต (ประมวลผลผ่าน `openpyxl` และ `pandas` โดยตรง)
-- **Business-First Dashboard:** ออกแบบมาเพื่อผู้บริหารและฝ่ายธุรกิจ เห็นตัวเลขความคุ้มค่า (ROI), จำนวนชั่วโมงที่ประหยัดได้ (Hours Saved), และมูลค่าเงินที่ประหยัดได้จริง
-- **Free Unlimited Unattended Workers:** ติดตั้ง Agent เพื่อสั่งรันอัตโนมัติบน VM หรือ PC เครื่องเก่าได้ไม่จำกัดจำนวน โดยไม่มีค่า License รายเดือน
-- **Python Power & Flexibility:** รองรับการขยาย Action เพิ่มเติมได้ง่ายด้วยภาษา Python ทำงานร่วมกับ Web (Playwright), API, Database, และ AI ได้อย่างไร้ขีดจำกัด
-- **Local AI Ready (Future-Proof):** ออกแบบสถาปัตยกรรมรองรับ Small Language Model (SLM) ขนาดเล็กที่รันบน CPU ได้ 100% สำหรับฟังก์ชัน AI Copilot และแจ้งเตือนอัจฉริยะ
+- **Zero-License Dependency:** No Microsoft 365 or Microsoft Excel installation required for spreadsheet operations (processed natively via `openpyxl` and `pandas`).
+- **Business-First Dashboard:** Tailored for executives and business leaders with transparent metrics on Return on Investment (ROI), total hours saved, and tangible cost reductions.
+- **Free Unlimited Unattended Workers:** Deploy robot worker daemons across any existing VMs or workstations with zero per-bot monthly licensing fees.
+- **Python Power & Extensibility:** Easily extend capabilities with standard Python, integrating seamlessly with modern Web automation (Playwright), REST APIs, SQL databases, and AI models.
+- **Local AI Ready (Future-Proof):** Architected to support lightweight, CPU-runnable Small Language Models (SLMs) for Studio Copilot and automated business-friendly error explanations.
 
 ---
 
-## 🧱 สถาปัตยกรรมระบบ (Core Modules)
+## System Architecture (Core Modules)
 
-BAT Automate แบ่งโครงสร้างออกเป็น 4 ส่วนหลัก:
+BAT Automate is organized into four decoupled, modular components:
 
 ```text
 BatAutomate/
-├── bat-core/               # 🧠 Execution Runtime & Standard Action Libraries
+├── bat-core/               # Execution Runtime & Standard Action Libraries
 │   ├── actions/            # Web (Playwright), Excel, API, Logic, System
 │   ├── engine/             # Flow Interpreter, Variable Context, Evaluator
 │   └── models/             # Flow JSON Schema (Pydantic models)
 │
-├── bat-studio/             # 🎨 Visual Flow Designer & UI Inspector (Desktop App)
+├── bat-studio/             # Visual Flow Designer & UI Inspector (Desktop App)
 │   ├── src/                # Tauri + React + React Flow
 │   └── inspector/          # Web & Windows UI Selector Tools
 │
-├── bat-orchestrator/       # 📊 Central Control Hub & Business Dashboard
+├── bat-orchestrator/       # Central Control Hub & Business Dashboard
 │   ├── api/                # FastAPI Backend, WebSocket Manager, Scheduler
 │   └── web/                # React Dashboard (Business KPIs, Jobs, Logs, Assets)
 │
-└── bat-worker/             # 🤖 Unattended / Attended Robot Daemon
+└── bat-worker/             # Unattended / Attended Robot Daemon
     └── src/                # Windows/Linux Service, WebSocket Client, Runner
 ```
 
-| โมดูล | บทบาทหน้าที่ | เทคโนโลยีหลัก |
+| Module | Role & Responsibility | Core Technology Stack |
 | :--- | :--- | :--- |
-| **BAT Core (`bat-core`)** | หัวใจการรันคำสั่ง ประมวลผล Flow JSON, จัดการตัวแปร, ทำงานกับ Web & Excel | Python, Playwright, Pandas, OpenPyXL |
-| **BAT Studio (`bat-studio`)** | โปรแกรม Desktop สำหรับลาก-วางสร้าง Flow และเครื่องมือชี้จับ UI Selector | Tauri, React, React Flow, TypeScript |
-| **BAT Orchestrator (`bat-orchestrator`)** | ศูนย์กลางคุมงาน ตั้งเวลา (Scheduler), Dashboard ติดตามผลลัพธ์ธุรกิจ, แจ้งเตือน LINE/Teams/Email | FastAPI, PostgreSQL, Redis, React, TailwindCSS |
-| **BAT Worker (`bat-worker`)** | Background Daemon ติดตั้งบนเครื่องเป้าหมาย รอรับงานจาก Orchestrator ไปรัน | Python Service, WebSocket |
+| **BAT Core (`bat-core`)** | Execution engine, Flow JSON interpreter, variable state manager, Web & Excel automation | Python, Playwright, Pandas, OpenPyXL |
+| **BAT Studio (`bat-studio`)** | Cross-platform desktop app for visual drag-and-drop workflow authoring & UI inspector | Tauri, React, React Flow, TypeScript |
+| **BAT Orchestrator (`bat-orchestrator`)** | Centralized management hub, cron/trigger scheduler, executive ROI dashboard, and alerting | FastAPI, PostgreSQL, Redis, React, TailwindCSS |
+| **BAT Worker (`bat-worker`)** | Background daemon deployed on execution targets receiving jobs via WebSocket | Python Service, WebSocket |
 
 ---
 
-## 🗺️ แผนการพัฒนา (Development Roadmap)
+## Development Roadmap
 
 - [ ] **Phase 1: Foundation & Core Engine (`bat-core`)**
-  - ออกแบบ Flow JSON Schema และ Pydantic Models
-  - สร้าง Core Interpreter, Context Manager และตัวจัดการตัวแปร (`${var}`)
-  - พัฒนา Action พื้นฐาน: Web (Playwright), Excel (`openpyxl`), Logic, HTTP API
-  - Structured Logging & CLI Runner (`bat-core run flow.json`)
+  - [x] Flow JSON Schema and Pydantic v2 data models
+  - [x] Flow Interpreter, execution context manager, and dynamic variable evaluator (`${var}`)
+  - [x] Standard Action libraries: Web (Playwright sync), Excel (`openpyxl`), Logic, HTTP API
+  - [x] Hierarchical Structured Logging (`logs/<flow>/<date>/<time>.json`)
+  - [x] Global CLI & Smart Flow Resolver (`batautomate list`, `batautomate run <flow_name>`)
 - [ ] **Phase 2: Visual Designer & Selector (`bat-studio`)**
-  - สร้าง Canvas ลาก-วางด้วย React Flow บน Tauri Desktop Shell
-  - พัฒนา Web UI Selector สำหรับจับ Element อัตโนมัติ
-  - ระบบทดสอบ Local Run & Debugger
+  - Interactive drag-and-drop workflow canvas with React Flow inside Tauri shell
+  - Web and desktop UI element inspectors for auto-generating reliable selectors
+  - Local flow runner and step-by-step interactive debugger
 - [ ] **Phase 3: Central Server & Business Dashboard (`bat-orchestrator`)**
-  - Backend API (FastAPI) + PostgreSQL + Redis
-  - Business Dashboard: คำนวณเวลาและเงินที่ประหยัดได้ (ROI), รายการ Transaction
-  - ระบบแจ้งเตือน Error และสรุปผลประจำวันผ่าน LINE (Messaging API), Teams, Email
+  - High-performance REST API (FastAPI) + PostgreSQL + Redis queue
+  - Executive Business Dashboard: ROI calculations, hours saved tracking, transaction audit trail
+  - Multi-channel alerts on failures and daily digests (LINE Messaging API, Microsoft Teams, Email)
 - [ ] **Phase 4: Unattended Agent Daemon (`bat-worker`)**
-  - WebSocket Agent Service คุยกับ Orchestrator
-  - จัดการ Isolated Process และ Stream Real-time Logs / Screenshots
+  - WebSocket agent daemon connecting worker nodes to Orchestrator
+  - Isolated process runner, real-time log streaming, and failure screenshot capture
 - [ ] **Phase 5: Desktop Automation & Community Open Source Release**
-  - เพิ่ม Windows Desktop UI Automation (`uiautomation`)
-  - จัดทำ Docker Compose 1-Click Deployment และคู่มือ Quick Start บน GitHub
+  - Native Windows desktop automation integration (`uiautomation`)
+  - 1-Click Docker Compose deployment and GitHub community quickstart documentation
 - [ ] **Phase 6: Local AI & Copilot Integration (Future Phase)**
-  - รองรับ Local SLM บน CPU (เช่น Qwen 2.5) สำหรับ Studio Copilot และสรุป Error เป็นภาษาธุรกิจ
+  - Local CPU-based SLM support (such as Qwen 2.5) for Studio Copilot and plain-language root-cause analysis
 
 ---
 
-## 📄 ลิขสิทธิ์ (License)
+## Quick Start (CLI)
 
-โครงการนี้เผยแพร่ภายใต้สัญญาอนุญาตแบบ Open Source (MIT License)
+Install `batautomate` in editable mode:
+
+```powershell
+cd bat-core
+pip install -e .
+```
+
+List discoverable workflows or execute a flow directly by name:
+
+```powershell
+# List available flows
+batautomate list
+
+# Run a flow using Smart Flow Resolver
+batautomate run rpachallenge
+```
+
+---
+
+## License
+
+This project is licensed under the terms of the Open Source [MIT License](LICENSE).

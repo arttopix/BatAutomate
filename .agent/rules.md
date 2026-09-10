@@ -1,4 +1,4 @@
-# 📜 BAT Automate - Project Rules & Guidelines (.agent/rules.md)
+# BAT Automate - Project Rules & Guidelines (.agent/rules.md)
 
 ไฟล์นี้เก็บกฎระเบียบ ข้อกำหนดทางสถาปัตยกรรม (Architecture Decisions) และแนวทางการพัฒนาสำหรับโครงการ **BAT Automate** เพื่อให้ AI Agent และทีมนักพัฒนาปฏิบัติตามอย่างเคร่งครัด
 
@@ -55,4 +55,32 @@
 
 - **No Emojis:** ไม่ต้องใส่ emoji หรือสัญลักษณ์ไอคอนรูปอารมณ์ลงในโค้ด, Markdown, เอกสาร, ไฟล์ หรือเนื้อหาที่สร้างขึ้นทุกชนิด
 - **Execution Documentation Required:** ทุกโมดูลที่สร้างขึ้น ต้องจัดทำคู่มือการใช้งานและการสั่งรันคำสั่ง (CLI / Execution Guide) ไว้ใน README.md ของโมดูลนั้นๆ อย่างครบถ้วน
+
+---
+
+## 6. ข้อกำหนดการเตรียมความพร้อมสำหรับ AI / LLM ในอนาคต (Future LLM & AI Readiness Standards)
+
+เพื่อให้ระบบพร้อมเชื่อมต่อกับ LLM ใน Phase ถัดไปได้อย่างไร้รอยต่อ โดยไม่ต้องรื้อโค้ดแกนกลาง:
+
+1. **Structured Error Telemetry:**
+   - ทุกครั้งที่เกิด Error ตัว Engine ต้องบันทึกบริบท (Context) รอบข้างอย่างละเอียดในรูปแบบ JSON เสมอ (เช่น URL หน้าเว็บ, Selector ที่หาไม่เจอ, แถวข้อมูลใน Excel, และพาทภาพ Screenshot) เพื่อให้ LLM สามารถอ่านและวิเคราะห์หาสาเหตุที่แท้จริง (Root Cause) ได้ทันที
+2. **Event Hooks & Callback Interface:**
+   - ตัว `bat-core` (Interpreter) ต้องเตรียม Event Hooks เช่น `on_step_error`, `on_flow_complete` เพื่อให้โมดูล AI Monitoring ในอนาคตสามารถเข้ามาดักฟังและส่งข้อความแจ้งเตือนได้โดยไม่ต้องแก้ไขโค้ดของ Core
+3. **Decoupled AI Service (แยกโมดูลอิสระ):**
+   - โมดูล AI Copilot และ LLM Monitoring ต้องทำงานในลักษณะ Add-on / Sidecar Service แยกจาก `bat-core` เสมอ เพื่อให้ Core Engine ยังคงความเร็ว เบา และรันได้โดยไม่ต้องติดตั้งโมเดลขนาดใหญ่
+4. **Local SLM on CPU First:**
+   - การนำโมเดลภาษามาใช้เป็นตัวช่วย Monitor ต้องมุ่งเน้น Small Language Models (เช่น Qwen 2.5 หรือ Llama 3.2 ขนาด 1B - 3B) ผ่านระบบ Quantization (GGUF / ONNX) ที่ประมวลผลบน CPU ได้ 100% เพื่อไม่ให้มีค่าใช้จ่าย API Token และปลอดภัยต่อข้อมูลภายในองค์กร
+
+---
+
+## 7. แผนการพัฒนาระบบบันทึกประวัติการทำงาน (Logging Architecture Roadmap)
+
+1. **Auto-Generate Default Clean JSON Log (ดำเนินการแล้ว):**
+   - ทุกครั้งที่สั่งรัน Flow ตัว Engine ต้องสร้างโฟลเดอร์ `logs/` และบันทึกไฟล์ Structured JSON Log (`log_YYYYMMDD_HHMMSS.json`) อัตโนมัติ โดยทำการกรองตัวแปรภายในระบบ (`__*`) ออก เพื่อให้ไฟล์สะอาด พร้อมสำหรับทั้งการตรวจสอบของมนุษย์และการอ่านของ AI
+2. **Central WebSocket Log Streaming (Phase 3 - bat-orchestrator):**
+   - ส่งสตรีม Log แบบ Real-time จาก Worker ผ่าน WebSocket ไปยัง Orchestrator เพื่อบันทึกลง PostgreSQL และนำไปพล็อตกราฟ Business Dashboard
+3. **LLM Error Diagnosis & Instant Alert (Phase AI Integration):**
+   - เมื่อมี Step ที่เกิด Error ให้นำบล็อกข้อมูล JSON ของข้อผิดพลาดนั้น ส่งให้โมเดลภาษาช่วยวิเคราะห์และสรุปผลเป็นภาษาธุรกิจส่งแจ้งเตือนเข้า LINE ทันที
+
+
 

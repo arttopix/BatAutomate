@@ -22,4 +22,10 @@ dev = [
 ]
 
 [project.scripts]
+batautomate = "bat_core.cli:main"
 bat-core = "bat_core.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["bat_core*"]
+
+
