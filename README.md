@@ -89,6 +89,9 @@ List discoverable workflows or execute a flow directly by name:
 # Check installed version and runtime info
 batautomate version
 
+# Install browser binaries (or let it auto-install on first web flow run)
+batautomate install-browsers
+
 # List available flows
 batautomate list
 

@@ -1,9 +1,44 @@
+import logging
+import subprocess
+import sys
 from typing import Any, Dict, Optional
 from playwright.sync_api import sync_playwright, Browser, Page, Playwright
 
 from .base import BaseAction
 from .registry import register_action
 from ..models.context import ExecutionContext
+
+logger = logging.getLogger("bat_core")
+
+
+def _launch_browser_with_auto_install(pw: Playwright, headless: bool) -> Browser:
+    try:
+        return pw.chromium.launch(headless=headless)
+    except Exception as e:
+        err_msg = str(e)
+        if "Executable doesn't exist" in err_msg or "Please run the following command" in err_msg:
+            logger.info("Playwright Chromium browser not detected. Installing Chromium automatically (first run only)...")
+            res = subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"])
+            if res.returncode != 0:
+                raise RuntimeError(
+                    "Failed to auto-install Chromium. Please run in terminal: playwright install chromium"
+                ) from e
+            try:
+                return pw.chromium.launch(headless=headless)
+            except Exception as retry_err:
+                retry_msg = str(retry_err)
+                if "Host system is missing dependencies" in retry_msg or "libraries" in retry_msg.lower():
+                    raise RuntimeError(
+                        "Chromium installed, but host system is missing OS dependencies. "
+                        "Please run in terminal: sudo playwright install-deps chromium"
+                    ) from retry_err
+                raise
+        elif "Host system is missing dependencies" in err_msg:
+            raise RuntimeError(
+                "Host system is missing dependencies to run Chromium. "
+                "Please run in terminal: sudo playwright install-deps chromium"
+            ) from e
+        raise
 
 
 def _get_page(context: ExecutionContext) -> Page:
@@ -40,7 +75,7 @@ class WebOpenAction(BaseAction):
             context.set_variable("__playwright_pw__", pw)
 
         if not browser:
-            browser = pw.chromium.launch(headless=headless)
+            browser = _launch_browser_with_auto_install(pw, headless=headless)
             context.set_variable("__playwright_browser__", browser)
 
         page = browser.new_page()

@@ -100,6 +100,9 @@ def main():
     # Command: version
     subparsers.add_parser("version", help="Show BAT Automate version and environment details")
 
+    # Command: install-browsers
+    subparsers.add_parser("install-browsers", help="Download and install Playwright Chromium browser")
+
     args = parser.parse_args()
 
     if args.command == "version":
@@ -107,6 +110,16 @@ def main():
         print(f"Python:       {platform.python_version()} ({platform.python_implementation()})")
         print(f"Platform:     {platform.system()} {platform.release()} ({platform.machine()})")
         sys.exit(0)
+
+    elif args.command == "install-browsers":
+        import subprocess
+        print("Installing Playwright Chromium browser for BAT Automate...")
+        res = subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"])
+        if res.returncode == 0:
+            print("Chromium browser successfully installed.")
+        else:
+            print("Installation failed. On Linux/Raspberry Pi, you may also need: sudo playwright install-deps chromium", file=sys.stderr)
+        sys.exit(res.returncode)
 
     elif args.command == "list":
         flows = discover_flows()

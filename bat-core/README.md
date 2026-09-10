@@ -59,6 +59,12 @@ pip install -e .
   batautomate --version
   ```
 
+- **ติดตั้งเบราว์เซอร์ Playwright สำหรับ Web Automation:**
+  ```powershell
+  batautomate install-browsers
+  ```
+  *(หรือปล่อยให้ระบบดาวน์โหลดอัตโนมัติเมื่อสั่งรัน Web Flow ในครั้งแรก)*
+
 - **ค้นหาและแสดงรายการ Flow ทั้งหมดในเครื่อง (เหมือน `ollama list`):**
   ```powershell
   batautomate list
