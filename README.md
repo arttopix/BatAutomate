@@ -86,6 +86,9 @@ pip install -e .
 List discoverable workflows or execute a flow directly by name:
 
 ```powershell
+# Check installed version and runtime info
+batautomate version
+
 # List available flows
 batautomate list
 

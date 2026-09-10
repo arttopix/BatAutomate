@@ -52,6 +52,13 @@ pip install -e .
 
 เมื่อติดตั้ง Package แล้ว สามารถเรียกใช้คำสั่งสากล `batautomate` ได้ทันที โดยระบบมี **Smart Flow Resolver** ที่ช่วยค้นหาไฟล์ Flow ให้อัตโนมัติโดยไม่ต้องระบุ Path ยาวๆ:
 
+- **ตรวจสอบเวอร์ชันและข้อมูลสภาพแวดล้อม (Version & Environment Info):**
+  ```powershell
+  batautomate version
+  # หรือ
+  batautomate --version
+  ```
+
 - **ค้นหาและแสดงรายการ Flow ทั้งหมดในเครื่อง (เหมือน `ollama list`):**
   ```powershell
   batautomate list

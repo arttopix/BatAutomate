@@ -1,9 +1,11 @@
 import argparse
 import json
+import platform
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from . import __version__
 from .models.flow import FlowDefinition
 from .engine.interpreter import FlowInterpreter
 from .engine.logger import ExecutionLogger
@@ -83,6 +85,7 @@ def resolve_flow_path(flow_input: str) -> Optional[Path]:
 
 def main():
     parser = argparse.ArgumentParser(prog="batautomate", description="BAT Automate - Enterprise RPA CLI Runner")
+    parser.add_argument("-v", "--version", action="version", version=f"batautomate {__version__}")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Command: run
@@ -94,9 +97,18 @@ def main():
     # Command: list
     subparsers.add_parser("list", help="List all discovered RPA Flows available to run")
 
+    # Command: version
+    subparsers.add_parser("version", help="Show BAT Automate version and environment details")
+
     args = parser.parse_args()
 
-    if args.command == "list":
+    if args.command == "version":
+        print(f"BAT Automate: v{__version__}")
+        print(f"Python:       {platform.python_version()} ({platform.python_implementation()})")
+        print(f"Platform:     {platform.system()} {platform.release()} ({platform.machine()})")
+        sys.exit(0)
+
+    elif args.command == "list":
         flows = discover_flows()
         if not flows:
             print("No flows found in current directory, 'flows/', 'examples/', or ~/.batautomate/flows/.")

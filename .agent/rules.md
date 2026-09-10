@@ -55,6 +55,7 @@
 
 - **No Emojis:** ไม่ต้องใส่ emoji หรือสัญลักษณ์ไอคอนรูปอารมณ์ลงในโค้ด, Markdown, เอกสาร, ไฟล์ หรือเนื้อหาที่สร้างขึ้นทุกชนิด
 - **Execution Documentation Required:** ทุกโมดูลที่สร้างขึ้น ต้องจัดทำคู่มือการใช้งานและการสั่งรันคำสั่ง (CLI / Execution Guide) ไว้ใน README.md ของโมดูลนั้นๆ อย่างครบถ้วน
+- **CLI Standard Commands:** เครื่องมือ CLI ของระบบต้องรองรับคำสั่งพื้นฐานเสมอ: `version` (เช็คเลขเวอร์ชัน, Python, OS), `list` (แสดงรายการ Flow), และ `run <flow>` (Smart Flow Resolver)
 
 ---
 
