@@ -13,7 +13,7 @@ class ExecutionLogger:
     Prints to console and outputs structured JSON logs.
     """
 
-    def __init__(self, log_dir: Optional[str] = None):
+    def __init__(self, log_dir: Optional[str] = "logs"):
         self.logger = logging.getLogger("bat_core")
         self.logger.setLevel(logging.INFO)
         if not self.logger.handlers:
@@ -22,7 +22,7 @@ class ExecutionLogger:
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
 
-        self.log_dir = Path(log_dir) if log_dir else None
+        self.log_dir = Path(log_dir) if log_dir else Path("logs")
         if self.log_dir:
             self.log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -50,6 +50,22 @@ class ExecutionLogger:
         self.logger.info(f"Total Duration: {m.total_duration_seconds:.2f}s")
 
         if self.log_dir:
-            log_file = self.log_dir / f"log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-            log_file.write_text(json.dumps(context.model_dump(mode="json"), indent=2), encoding="utf-8")
+            log_data = context.model_dump(mode="json")
+            # Filter out internal private runtime variables (e.g. __playwright_*)
+            if "variables" in log_data and isinstance(log_data["variables"], dict):
+                log_data["variables"] = {
+                    k: v for k, v in log_data["variables"].items() if not k.startswith("__")
+                }
+
+            import re
+            flow_slug = re.sub(r"[^\w\-]+", "_", context.flow_name.lower().strip()).strip("_")
+            date_str = context.start_time.strftime("%Y-%m-%d")
+            time_str = context.start_time.strftime("%H%M%S")
+            status_str = "failed" if context.has_error else "success"
+
+            target_dir = self.log_dir / flow_slug / date_str
+            target_dir.mkdir(parents=True, exist_ok=True)
+
+            log_file = target_dir / f"{time_str}_{status_str}.json"
+            log_file.write_text(json.dumps(log_data, indent=2, ensure_ascii=False), encoding="utf-8")
             self.logger.info(f"Saved JSON log to: {log_file}")
