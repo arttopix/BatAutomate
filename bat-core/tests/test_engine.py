@@ -52,3 +52,29 @@ def test_interpreter_load_sample_flow_json():
     assert ctx.has_error is False
     assert len(ctx.step_results) == 3
 
+
+def test_logger_safe_serialization_with_custom_objects(tmp_path):
+    from bat_core.models.context import ExecutionContext
+    from bat_core.engine.logger import ExecutionLogger
+
+    class NonSerializableClass:
+        def __repr__(self):
+            return "<CustomObject>"
+
+    ctx = ExecutionContext(flow_name="Test Safe Serialization")
+    ctx.set_variable("__internal_obj__", NonSerializableClass())
+    ctx.set_variable("normal_var", 123)
+    ctx.set_variable("custom_obj", NonSerializableClass())
+
+    logger = ExecutionLogger(log_dir=str(tmp_path))
+    # Should not raise PydanticSerializationError
+    logger.log_execution_summary(ctx)
+
+    log_files = list(tmp_path.glob("*/*/*.json"))
+    assert len(log_files) == 1
+    content = json.loads(log_files[0].read_text(encoding="utf-8"))
+    assert "__internal_obj__" not in content["variables"]
+    assert content["variables"]["normal_var"] == 123
+    assert content["variables"]["custom_obj"] == "<CustomObject>"
+
+

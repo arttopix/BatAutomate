@@ -50,22 +50,26 @@ class ExecutionLogger:
         self.logger.info(f"Total Duration: {m.total_duration_seconds:.2f}s")
 
         if self.log_dir:
-            log_data = context.model_dump(mode="json")
-            # Filter out internal private runtime variables (e.g. __playwright_*)
-            if "variables" in log_data and isinstance(log_data["variables"], dict):
-                log_data["variables"] = {
-                    k: v for k, v in log_data["variables"].items() if not k.startswith("__")
-                }
+            try:
+                raw_data = context.model_dump(mode="python")
 
-            import re
-            flow_slug = re.sub(r"[^\w\-]+", "_", context.flow_name.lower().strip()).strip("_")
-            date_str = context.start_time.strftime("%Y-%m-%d")
-            time_str = context.start_time.strftime("%H%M%S")
-            status_str = "failed" if context.has_error else "success"
+                # Filter out internal private runtime variables (e.g. __playwright_*)
+                if "variables" in raw_data and isinstance(raw_data["variables"], dict):
+                    raw_data["variables"] = {
+                        k: v for k, v in raw_data["variables"].items() if not str(k).startswith("__")
+                    }
 
-            target_dir = self.log_dir / flow_slug / date_str
-            target_dir.mkdir(parents=True, exist_ok=True)
+                import re
+                flow_slug = re.sub(r"[^\w\-]+", "_", context.flow_name.lower().strip()).strip("_")
+                date_str = context.start_time.strftime("%Y-%m-%d")
+                time_str = context.start_time.strftime("%H%M%S")
+                status_str = "failed" if context.has_error else "success"
 
-            log_file = target_dir / f"{time_str}_{status_str}.json"
-            log_file.write_text(json.dumps(log_data, indent=2, ensure_ascii=False), encoding="utf-8")
-            self.logger.info(f"Saved JSON log to: {log_file}")
+                target_dir = self.log_dir / flow_slug / date_str
+                target_dir.mkdir(parents=True, exist_ok=True)
+
+                log_file = target_dir / f"{time_str}_{status_str}.json"
+                log_file.write_text(json.dumps(raw_data, default=str, indent=2, ensure_ascii=False), encoding="utf-8")
+                self.logger.info(f"Saved JSON log to: {log_file}")
+            except Exception as e:
+                self.logger.error(f"Failed to save JSON execution log: {e}")
