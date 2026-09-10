@@ -1,0 +1,23 @@
+# Python Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# Python Cache & Artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Build & Distribution
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Logs & Environment Variables
+*.log
+.env
+logs/
