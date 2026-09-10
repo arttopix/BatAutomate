@@ -55,6 +55,7 @@ BatAutomate/
   - [x] พัฒนา Action พื้นฐาน: Web (Playwright), Excel (`openpyxl`), Logic, HTTP API
   - [x] Hierarchical Structured Logging (`logs/<flow>/<date>/<time>.json`)
   - [x] Global CLI & Smart Flow Resolver (`batautomate list`, `batautomate run <flow_name>`)
+  - [ ] สถาปัตยกรรมโครงสร้างโปรเจกต์และระบบ Subflow (`flow.call`, เรียกใช้โมดูลกลาง `@shared/`)
 - [ ] **Phase 2: Visual Designer & Selector (`bat-studio`)**
   - สร้าง Canvas ลาก-วางด้วย React Flow บน Tauri Desktop Shell
   - พัฒนา Web UI Selector สำหรับจับ Element อัตโนมัติ

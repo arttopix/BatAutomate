@@ -55,6 +55,7 @@ BatAutomate/
   - [x] Standard Action libraries: Web (Playwright sync), Excel (`openpyxl`), Logic, HTTP API
   - [x] Hierarchical Structured Logging (`logs/<flow>/<date>/<time>.json`)
   - [x] Global CLI & Smart Flow Resolver (`batautomate list`, `batautomate run <flow_name>`)
+  - [ ] Modular Flow Project Architecture & Subflow Engine (`flow.call`, `@shared/` namespace, project bundles)
 - [ ] **Phase 2: Visual Designer & Selector (`bat-studio`)**
   - Interactive drag-and-drop workflow canvas with React Flow inside Tauri shell
   - Web and desktop UI element inspectors for auto-generating reliable selectors

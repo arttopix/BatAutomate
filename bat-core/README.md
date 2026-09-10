@@ -130,4 +130,57 @@ logs/
 - **`variables` (State Snapshot):** ภาพถ่ายข้อมูลตัวแปรล่าสุดในระบบ (กรองตัวแปรเทคนิคภายในอย่าง `__playwright_*` ออกอัตโนมัติ)
 - **`step_results`:** ประวัติการประมวลผลย่อยทีละ Step ระบุ Action, ระยะเวลาหน่วยวินาที, Output และรายละเอียด Error แยกประเภท `Technical` หรือ `Business`
 
+---
+
+## สถาปัตยกรรมโครงสร้างโฟลเดอร์โปรเจกต์และระบบ Subflow (Modular Flow Architecture)
+
+เพื่อรองรับระบบ RPA ระดับองค์กรที่มีหลายกระบวนการและมีการเรียกใช้ Flow ซ้อนกัน ระบบกำหนดโครงสร้างมาตรฐานแบบ **Self-Contained Project Bundle**:
+
+### 1. โครงสร้างโฟลเดอร์แบบแบ่งตามโครงการ (Project Directory Structure)
+
+```text
+flows/
+├── shared/                                 # คลังโมดูลส่วนกลางที่ทุกโปรเจกต์ดึงไปใช้ซ้ำได้
+│   ├── notify_line.json                    # ส่งแจ้งเตือน LINE
+│   └── web_login_sso.json                  # ล็อกอินระบบกลาง
+│
+└── accounting/                             # แยกตามแผนกธุรกิจ
+    └── invoice_tax_filing/                 # 1 โฟลเดอร์ = 1 โครงการงานอัตโนมัติ
+        ├── flow.json                       # Entry point หลักของงาน
+        ├── subflows/                       # งานย่อยเฉพาะของโครงการนี้
+        │   ├── download_tax_pdf.json
+        │   └── extract_table.json
+        └── assets/                         # ไฟล์ประกอบและ Template
+            └── tax_template.xlsx
+```
+
+### 2. มาตรฐานการเรียกใช้ Flow ซ้อน Flow (`flow.call`)
+
+- **เรียกใช้งาน Subflow ภายในโปรเจกต์เดียวกัน (Relative Path):**
+  ```json
+  {
+    "id": "step_extract",
+    "name": "Extract Table Data",
+    "action": "flow.call",
+    "parameters": {
+      "flow": "./subflows/extract_table.json",
+      "inputs": { "pdf_path": "${downloaded_pdf}" }
+    },
+    "output_var": "extracted_data"
+  }
+  ```
+
+- **เรียกใช้งาน Shared Component ส่วนกลาง (Namespace `@shared/`):**
+  ```json
+  {
+    "id": "step_notify",
+    "name": "Send LINE Alert",
+    "action": "flow.call",
+    "parameters": {
+      "flow": "@shared/notify_line.json",
+      "inputs": { "message": "งานประมวลผลภาษีเสร็จสิ้น" }
+    }
+  }
+  ```
+
 

@@ -24,7 +24,7 @@
 
 | โมดูล | เทคโนโลยีที่กำหนด | กฎเกณฑ์ที่ต้องปฏิบัติตาม |
 | :--- | :--- | :--- |
-| **`bat-core`** | Python 3.10+, Playwright, OpenPyXL, Pandas, Pydantic | • ต้องเป็นอิสระจาก GUI (Headless-ready)<br>• ออกแบบ Action ในลักษณะ Plugin Architecture (`BaseAction`)<br>• มีระบบประเมินตัวแปร `${var}` ที่ปลอดภัย |
+| **`bat-core`** | Python 3.10+, Playwright, OpenPyXL, Pandas, Pydantic | • ต้องเป็นอิสระจาก GUI (Headless-ready)<br>• ออกแบบ Action ในลักษณะ Plugin Architecture (`BaseAction`)<br>• มีระบบประเมินตัวแปร `${var}` ที่ปลอดภัย<br>• รองรับสถาปัตยกรรม Project Bundle (`flow.json`, `subflows/`, `assets/`) และ Action `flow.call` เพื่อเรียก Subflow และ `@shared/` |
 | **`bat-studio`** | Desktop App ด้วย **Tauri + React + React Flow** | • ตัว Canvas เขียนด้วย React Component มาตรฐาน เพื่อให้นำไปเปิดบน Web Orchestrator ในอนาคตได้<br>• ตัวจับ UI (Selector) ต้องสร้าง Selector หลายชั้น (XPath, Text, Id, CSS) เพื่อความเสถียร |
 | **`bat-orchestrator`** | FastAPI, PostgreSQL, Redis, React Dashboard | • รองรับการแจ้งเตือนงานสำเร็จและ Error ไปที่ **LINE (Messaging API)** เป็นอันดับแรก ตามด้วย Teams และ Email<br>• มี Dashboard คำนวณ ROI สำหรับผู้บริหาร |
 | **`bat-worker`** | Python Daemon / Windows Service, WebSocket | • ติดตั้งบนเครื่องเป้าหมายเพื่อรอรับงานจาก Orchestrator ผ่าน WebSocket<br>• มีระบบถ่าย Screenshot และสตรีม Log เรียลไทม์เมื่อเกิด Error |
