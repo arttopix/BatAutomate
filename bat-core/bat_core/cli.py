@@ -92,7 +92,7 @@ def main():
     run_parser = subparsers.add_parser("run", help="Run an RPA Flow by name or path (e.g. 'batautomate run rpachallenge')")
     run_parser.add_argument("flow_file", help="Flow name or path to flow.json file")
     run_parser.add_argument("--vars", help="Optional JSON string of variables to override", default=None)
-    run_parser.add_argument("--log-dir", help="Directory to save execution JSON logs (default: logs)", default="logs")
+    run_parser.add_argument("--log-dir", help="Directory to save execution JSON logs (default: auto-detected project root 'logs/')", default=None)
 
     # Command: list
     subparsers.add_parser("list", help="List all discovered RPA Flows available to run")
@@ -166,7 +166,7 @@ def main():
 
         extra_vars["__flow_dir__"] = str(resolved_path.parent)
 
-        logger = ExecutionLogger(log_dir=args.log_dir)
+        logger = ExecutionLogger(log_dir=args.log_dir, flow_path=resolved_path)
         interpreter = FlowInterpreter(logger=logger)
         context = interpreter.run_flow(flow_def, initial_vars=extra_vars)
 

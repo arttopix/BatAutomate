@@ -78,3 +78,17 @@ def test_logger_safe_serialization_with_custom_objects(tmp_path):
     assert content["variables"]["custom_obj"] == "<CustomObject>"
 
 
+def test_resolve_log_dir(tmp_path):
+    from bat_core.engine.logger import resolve_log_dir
+
+    # 1. Custom log dir explicitly specified
+    custom = resolve_log_dir(str(tmp_path / "my_logs"))
+    assert custom == (tmp_path / "my_logs").resolve()
+
+    # 2. Inside project structure (containing .git or bat-core)
+    # The current repo has root at BatAutomate
+    resolved = resolve_log_dir()
+    assert (resolved.parent / "bat-core").exists() or (resolved.parent / ".git").exists()
+    assert resolved.name == "logs"
+
+

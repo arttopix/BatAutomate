@@ -2,9 +2,35 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from ..models.context import ExecutionContext, StepResult
+
+
+def resolve_log_dir(log_dir: Optional[Union[str, Path]] = None, flow_path: Optional[Path] = None) -> Path:
+    """
+    Smart Log Directory Resolver:
+    Locates the project root (containing .git or bat-core) so logs are always saved to
+    the root 'logs/' directory, regardless of whether called from bat-core or another subfolder.
+    """
+    if log_dir and str(log_dir).strip() not in ["", "logs"]:
+        return Path(log_dir).resolve()
+
+    # 1. Search upwards from Current Working Directory
+    curr = Path.cwd().resolve()
+    for p in [curr] + list(curr.parents):
+        if (p / ".git").exists() or (p / "bat-core").is_dir():
+            return p / "logs"
+
+    # 2. Search upwards from flow file if provided
+    if flow_path:
+        f_resolved = Path(flow_path).resolve()
+        for p in list(f_resolved.parents):
+            if (p / ".git").exists() or (p / "bat-core").is_dir():
+                return p / "logs"
+
+    # 3. Fallback to CWD/logs
+    return (Path.cwd() / "logs").resolve()
 
 
 class ExecutionLogger:
@@ -13,7 +39,7 @@ class ExecutionLogger:
     Prints to console and outputs structured JSON logs.
     """
 
-    def __init__(self, log_dir: Optional[str] = "logs"):
+    def __init__(self, log_dir: Optional[Union[str, Path]] = None, flow_path: Optional[Path] = None):
         self.logger = logging.getLogger("bat_core")
         self.logger.setLevel(logging.INFO)
         if not self.logger.handlers:
@@ -22,7 +48,7 @@ class ExecutionLogger:
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
 
-        self.log_dir = Path(log_dir) if log_dir else Path("logs")
+        self.log_dir = resolve_log_dir(log_dir, flow_path=flow_path)
         if self.log_dir:
             self.log_dir.mkdir(parents=True, exist_ok=True)
 
