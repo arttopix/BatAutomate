@@ -1,7 +1,7 @@
-# BAT Automate
+# AI Developer Agent Guidelines (.agent/)
 
-> **Open-Source, Local AI-Native Agentic Automation Framework**  
-> ปลดล็อกค่าลิขสิทธิ์ซอฟต์แวร์ระบบอัตโนมัติ ด้วยแพลตฟอร์ม Agentic Automation ยุคใหม่ที่ขับเคลื่อนด้วย Python และ Local SLM รันบนเครื่องได้ 100% ผสานการทำงานแบบ Autonomous Workflows, Zero-License Excel และ Unattended Robot ฟรีตลอดชีพ
+> **โฟลเดอร์สำหรับ AI Pair-Programming Assistant (ไม่ใช่ Unattended Robot Worker)**  
+> โฟลเดอร์ `.agent/` นี้มีไว้เก็บข้อกำหนด ทิศทางสถาปัตยกรรม และกฎเกณฑ์ในการเขียนโค้ดสำหรับ AI Agent ที่ช่วยพัฒนาโครงการ BAT Automate (ส่วน Robot Daemon สำหรับรันงานอัตโนมัติบนเครื่องปลายทางคือโมดูล `bat-worker`)
 
 ---
 
@@ -21,21 +21,26 @@ BAT Automate แบ่งโครงสร้างออกเป็น 4 ส�
 
 ```text
 BatAutomate/
-├── bat-core/               # Execution Runtime & Standard Action Libraries
-│   ├── actions/            # Web (Playwright), Excel, API, Logic, System
-│   ├── engine/             # Flow Interpreter, Variable Context, Evaluator
-│   └── models/             # Flow JSON Schema (Pydantic models)
+├── bat-core/                   # Python Package Module (Runtime Engine)
+│   ├── pyproject.toml          # Package metadata & build configuration
+│   ├── requirements.txt
+│   ├── batautomate/            # Core Python Package (Flat layout: actions, engine, models, cli)
+│   │   ├── actions/            # Web (Playwright), Excel, API, Logic, System
+│   │   ├── engine/             # Flow Interpreter, Variable Context, Evaluator, Logger
+│   │   ├── models/             # Flow JSON Schema (Pydantic models)
+│   │   └── cli.py              # CLI Runner (batautomate)
+│   └── tests/                  # Pytest unit tests
 │
-├── bat-studio/             # Visual Flow Designer & UI Inspector (Desktop App)
-│   ├── src/                # Tauri + React + React Flow
-│   └── inspector/          # Web & Windows UI Selector Tools
+├── flows/                      # Workflows & Self-Contained Project Bundles
+│   ├── @shared/                # Cross-project reusable flows (LINE alerts, SSO login)
+│   └── benchmarks/
+│       └── rpachallenge/       # Self-contained project bundle (flow.json, subflows, assets)
 │
-├── bat-orchestrator/       # Central Control Hub & Business Dashboard
-│   ├── api/                # FastAPI Backend, WebSocket Manager, Scheduler
-│   └── web/                # React Dashboard (Business KPIs, Jobs, Logs, Assets)
+├── logs/                       # Central Structured Execution Logs (Hierarchical JSON)
 │
-└── bat-worker/             # Unattended / Attended Robot Daemon
-    └── src/                # Windows/Linux Service, WebSocket Client, Runner
+├── bat-studio/                 # Visual Flow Designer & UI Inspector (Desktop App - Planned)
+├── bat-orchestrator/           # Central Control Hub & Business Dashboard (Planned)
+└── bat-worker/                 # Unattended / Attended Robot Daemon (Planned)
 ```
 
 | โมดูล | บทบาทหน้าที่ | เทคโนโลยีหลัก |
@@ -74,6 +79,29 @@ BatAutomate/
   - ผสานการทำงานกับ Local SLM บน CPU (เช่น Qwen 2.5, Llama 3.2 ผ่าน GGUF / Ollama)
   - ระบบ Self-Healing UI Selector และ Agentic Decision Steps ทำงานอัตโนมัติ
   - Studio Copilot สำหรับแปลงภาษาธรรมชาติเป็น Flow และวิเคราะห์หาสาเหตุของ Error (Root-Cause Analysis)
+
+---
+
+## สถาปัตยกรรมโปรเจกต์และวงจรชีวิตการทำงาน (Project Bundle & Unattended Lifecycle)
+
+เพื่อรองรับการพัฒนางานอัตโนมัติระดับองค์กร ระบบกำหนดโครงสร้างโฟลเดอร์แบบ **Self-Contained Project Bundle** โดยแบ่งตามแผนกธุรกิจและมีโฟลเดอร์ `@shared/` สำหรับโมดูลส่วนกลาง:
+
+```text
+flows/
+├── @shared/                                # คลัง Flow ส่วนกลาง (LINE Alert, SSO Login)
+└── accounting/                             # แยกตามแผนกธุรกิจ
+    └── invoice_tax_filing/                 # 1 โครงการ = 1 โฟลเดอร์อิสระ
+        ├── flow.json                       # Entry point หลัก
+        ├── subflows/                       # งานย่อยภายในโครงการ
+        └── assets/                         # ไฟล์ประกอบและ Template
+```
+
+### ขั้นตอนการส่งมอบงานสู่เครื่อง Unattended Robot:
+1. **Local Development:** พัฒนาและทดสอบผ่าน CLI หรือ Studio โดยใช้ Relative Path เสมอ
+2. **Packaging:** รวมโฟลเดอร์โปรเจกต์เป็นไฟล์แพ็กเกจเดี่ยว (เช่น `.batpkg` หรือ `.zip`) พร้อมสำเนา `@shared/` ที่จำเป็นเข้ามาในตัว
+3. **Distribution & Cache:** Worker บนเครื่องเป้าหมายดาวน์โหลดแพ็กเกจจาก Orchestrator มาเก็บใน Local Cache
+4. **Sandbox Workspace:** แตกไฟล์ลงโฟลเดอร์เฉพาะกิจของแต่ละ Job เพื่อแยกพื้นที่ทำงานและป้องกันปัญหาไฟล์ชนกัน
+5. **Execution & Telemetry:** รันผ่าน `bat-core` ในกระบวนการแยก และสตรีม Log แบบเรียลไทม์ผ่าน WebSocket
 
 ---
 

@@ -40,7 +40,7 @@ class ExecutionLogger:
     """
 
     def __init__(self, log_dir: Optional[Union[str, Path]] = None, flow_path: Optional[Path] = None):
-        self.logger = logging.getLogger("bat_core")
+        self.logger = logging.getLogger("batautomate")
         self.logger.setLevel(logging.INFO)
         if not self.logger.handlers:
             handler = logging.StreamHandler()

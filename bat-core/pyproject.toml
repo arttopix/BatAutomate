@@ -6,7 +6,6 @@ build-backend = "setuptools.build_meta"
 name = "batautomate"
 version = "0.1.0b1"
 description = "Core execution engine and standard action libraries for BAT Automate RPA platform"
-readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.10"
 dependencies = [
     "pydantic>=2.0.0",
@@ -22,10 +21,10 @@ dev = [
 ]
 
 [project.scripts]
-batautomate = "bat_core.cli:main"
-bat-core = "bat_core.cli:main"
+batautomate = "batautomate.cli:main"
+bat-core = "batautomate.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["bat_core*"]
+include = ["batautomate*"]
 
 

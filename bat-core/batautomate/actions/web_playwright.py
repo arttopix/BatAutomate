@@ -1,6 +1,7 @@
 import logging
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any, Dict, Optional
 from playwright.sync_api import sync_playwright, Browser, Page, Playwright
 
@@ -8,7 +9,7 @@ from .base import BaseAction
 from .registry import register_action
 from ..models.context import ExecutionContext
 
-logger = logging.getLogger("bat_core")
+logger = logging.getLogger("batautomate")
 
 
 def _launch_browser_with_auto_install(pw: Playwright, headless: bool) -> Browser:
@@ -120,10 +121,18 @@ class WebGetTextAction(BaseAction):
 class WebScreenshotAction(BaseAction):
     def execute(self, parameters: Dict[str, Any], context: ExecutionContext) -> Any:
         page = _get_page(context)
-        path = parameters.get("path", "screenshot.png")
+        path_str = parameters.get("path", "screenshot.png")
         full_page = bool(parameters.get("full_page", False))
-        page.screenshot(path=path, full_page=full_page)
-        return {"screenshot_path": path}
+
+        target_path = Path(path_str)
+        if not target_path.is_absolute():
+            flow_dir_str = context.get_variable("__flow_dir__")
+            if flow_dir_str:
+                target_path = Path(flow_dir_str) / path_str
+
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        page.screenshot(path=str(target_path), full_page=full_page)
+        return {"screenshot_path": str(target_path)}
 
 
 @register_action("web.close")

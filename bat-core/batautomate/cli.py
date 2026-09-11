@@ -11,6 +11,14 @@ from .engine.interpreter import FlowInterpreter
 from .engine.logger import ExecutionLogger
 
 
+def _get_project_root() -> Optional[Path]:
+    curr = Path.cwd().resolve()
+    for p in [curr] + list(curr.parents):
+        if (p / ".git").exists() or (p / "bat-core").is_dir():
+            return p
+    return None
+
+
 def _get_search_directories() -> List[Path]:
     dirs = [
         Path.cwd(),
@@ -19,28 +27,64 @@ def _get_search_directories() -> List[Path]:
         Path(__file__).parent.parent / "examples",
         Path.home() / ".batautomate" / "flows",
     ]
-    return [d for d in dirs if d.exists()]
+    root = _get_project_root()
+    if root:
+        dirs.insert(1, root / "flows")
+        dirs.append(root / "examples")
+
+    unique_dirs = []
+    seen = set()
+    for d in dirs:
+        if d.exists() and d.resolve() not in seen:
+            seen.add(d.resolve())
+            unique_dirs.append(d.resolve())
+    return unique_dirs
 
 
 def discover_flows() -> Dict[str, Tuple[Path, str]]:
     """
-    Discovers available flow JSON files across search directories.
+    Discovers available flow JSON files and Self-Contained Project Bundles across search directories.
     Returns dict mapping flow alias/name to (file_path, description).
     """
     discovered: Dict[str, Tuple[Path, str]] = {}
 
     for search_dir in _get_search_directories():
+        # 1. Discover Self-Contained Project Bundles (directories with flow.json)
+        for flow_file in search_dir.glob("**/flow.json"):
+            parts = flow_file.parts
+            if any(p.startswith(".") or p in ["__pycache__", "subflows", "node_modules", ".venv", "venv"] for p in parts):
+                continue
+            try:
+                data = json.loads(flow_file.read_text(encoding="utf-8"))
+                if isinstance(data, dict) and "steps" in data:
+                    name = data.get("name", flow_file.parent.name)
+                    alias = flow_file.parent.name
+                    discovered[alias] = (flow_file, name)
+                    # Also register namespaced alias relative to search_dir (e.g. benchmarks/rpachallenge)
+                    try:
+                        rel = flow_file.parent.relative_to(search_dir)
+                        rel_str = str(rel).replace("\\", "/")
+                        if rel_str and rel_str != alias:
+                            discovered[rel_str] = (flow_file, name)
+                    except ValueError:
+                        pass
+            except Exception:
+                continue
+
+        # 2. Discover flat flow files (*.json)
         for json_file in search_dir.glob("*.json"):
+            if json_file.name == "flow.json":
+                continue
             if json_file.name.endswith("_flow.json") or json_file.parent.name in ["examples", "flows"]:
                 try:
                     data = json.loads(json_file.read_text(encoding="utf-8"))
                     if isinstance(data, dict) and "steps" in data:
                         name = data.get("name", json_file.stem)
-                        # Aliases
                         alias = json_file.stem
                         if alias.endswith("_flow"):
                             alias = alias[:-5]
-                        discovered[alias] = (json_file, name)
+                        if alias not in discovered:
+                            discovered[alias] = (json_file, name)
                 except Exception:
                     continue
     return discovered
@@ -48,30 +92,34 @@ def discover_flows() -> Dict[str, Tuple[Path, str]]:
 
 def resolve_flow_path(flow_input: str) -> Optional[Path]:
     """
-    Smart Flow Resolver: resolves a flow name, alias, or path into an absolute file path.
+    Smart Flow Resolver: resolves a flow name, alias, project directory, or path into an absolute file path.
     """
-    # 1. Exact path or relative path
+    # 1. Exact path or relative path to file
     direct_path = Path(flow_input)
     if direct_path.is_file():
         return direct_path.resolve()
 
-    # 2. Direct path with .json
+    # 2. Direct path to a project directory containing flow.json
+    if direct_path.is_dir() and (direct_path / "flow.json").is_file():
+        return (direct_path / "flow.json").resolve()
+
+    # 3. Direct path with .json
     json_path = Path(f"{flow_input}.json")
     if json_path.is_file():
         return json_path.resolve()
 
-    # 3. Search in discovered flows
+    # 4. Search in discovered flows (aliases & project bundles)
     flows = discover_flows()
     if flow_input in flows:
         return flows[flow_input][0].resolve()
 
-    # 4. Check with _flow suffix
     if f"{flow_input}_flow" in flows:
         return flows[f"{flow_input}_flow"][0].resolve()
 
-    # 5. Search directories
+    # 5. Search directories for project bundles or files
     for search_dir in _get_search_directories():
         candidates = [
+            search_dir / flow_input / "flow.json",
             search_dir / flow_input,
             search_dir / f"{flow_input}.json",
             search_dir / f"{flow_input}_flow.json",
@@ -79,6 +127,13 @@ def resolve_flow_path(flow_input: str) -> Optional[Path]:
         for c in candidates:
             if c.is_file():
                 return c.resolve()
+            if c.is_dir() and (c / "flow.json").is_file():
+                return (c / "flow.json").resolve()
+
+        # Check recursive directory match (e.g. flows/**/<flow_input>/flow.json)
+        for matched in search_dir.glob(f"**/{flow_input}/flow.json"):
+            if matched.is_file():
+                return matched.resolve()
 
     return None
 

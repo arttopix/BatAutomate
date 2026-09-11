@@ -21,21 +21,31 @@ BAT Automate is organized into four decoupled, modular components:
 
 ```text
 BatAutomate/
-├── bat-core/               # Execution Runtime & Standard Action Libraries
-│   ├── actions/            # Web (Playwright), Excel, API, Logic, System
-│   ├── engine/             # Flow Interpreter, Variable Context, Evaluator
-│   └── models/             # Flow JSON Schema (Pydantic models)
+├── bat-core/                   # Python Package Module (Runtime Engine)
+│   ├── pyproject.toml          # Package metadata & build configuration
+│   ├── requirements.txt
+│   ├── batautomate/            # Core Python Package (Flat layout: actions, engine, models, cli)
+│   │   ├── actions/            # Web (Playwright), Excel, API, Logic, System
+│   │   ├── engine/             # Flow Interpreter, Variable Context, Evaluator, Logger
+│   │   ├── models/             # Flow JSON Schema (Pydantic models)
+│   │   └── cli.py              # CLI Runner (batautomate)
+│   └── tests/                  # Pytest unit tests
 │
-├── bat-studio/             # Visual Flow Designer & UI Inspector (Desktop App)
-│   ├── src/                # Tauri + React + React Flow
-│   └── inspector/          # Web & Windows UI Selector Tools
+├── docs/                       # Comprehensive Documentation & Architecture Guides
+│   ├── cli_guide.md            # CLI execution guide and parameters
+│   ├── project_bundles.md      # Modular project bundles, subflows, and lifecycle
+│   └── logging.md              # Structured logging and error telemetry
 │
-├── bat-orchestrator/       # Central Control Hub & Business Dashboard
-│   ├── api/                # FastAPI Backend, WebSocket Manager, Scheduler
-│   └── web/                # React Dashboard (Business KPIs, Jobs, Logs, Assets)
+├── flows/                      # Workflows & Self-Contained Project Bundles
+│   ├── @shared/                # Cross-project reusable flows (LINE alerts, SSO login)
+│   └── benchmarks/
+│       └── rpachallenge/       # Self-contained project bundle (flow.json, subflows, assets)
 │
-└── bat-worker/             # Unattended / Attended Robot Daemon
-    └── src/                # Windows/Linux Service, WebSocket Client, Runner
+├── logs/                       # Central Structured Execution Logs (Hierarchical JSON)
+│
+├── bat-studio/                 # Visual Flow Designer & UI Inspector (Desktop App - Planned)
+├── bat-orchestrator/           # Central Control Hub & Business Dashboard (Planned)
+└── bat-worker/                 # Unattended / Attended Robot Daemon (Planned)
 ```
 
 | Module | Role & Responsibility | Core Technology Stack |
@@ -95,12 +105,22 @@ batautomate version
 # Install browser binaries (or let it auto-install on first web flow run)
 batautomate install-browsers
 
-# List available flows
+# List available flows (both flat flows and project bundles)
 batautomate list
 
 # Run a flow using Smart Flow Resolver
 batautomate run rpachallenge
 ```
+
+---
+
+## Documentation
+
+Detailed architectural specifications, execution manuals, and standards are available in the [`docs/`](docs/) directory:
+
+- **[CLI Execution Guide](docs/cli_guide.md):** Complete guide to `batautomate` commands, options (`--vars`, `--log-dir`), and Smart Flow Resolver mechanics.
+- **[Modular Project Bundles & Unattended Lifecycle](docs/project_bundles.md):** Self-contained flow packages (`flows/<dept>/<project>/`), subflows (`flow.call`), `@shared/` namespace, and sandbox execution on unattended workers (`bat-worker`).
+- **[Structured Logging Standards](docs/logging.md):** Hierarchical JSON log format (`logs/<flow>/<date>/<time>.json`), runtime privacy sanitization, and technical vs business exception handling.
 
 ---
 

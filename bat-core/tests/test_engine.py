@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
 import pytest
-from bat_core.models.flow import FlowDefinition, Step
-from bat_core.engine.interpreter import FlowInterpreter
-from bat_core.engine.evaluator import VariableEvaluator
+from batautomate.models.flow import FlowDefinition, Step
+from batautomate.engine.interpreter import FlowInterpreter
+from batautomate.engine.evaluator import VariableEvaluator
 
 
 def test_variable_evaluator():
@@ -54,8 +54,8 @@ def test_interpreter_load_sample_flow_json():
 
 
 def test_logger_safe_serialization_with_custom_objects(tmp_path):
-    from bat_core.models.context import ExecutionContext
-    from bat_core.engine.logger import ExecutionLogger
+    from batautomate.models.context import ExecutionContext
+    from batautomate.engine.logger import ExecutionLogger
 
     class NonSerializableClass:
         def __repr__(self):
@@ -79,7 +79,7 @@ def test_logger_safe_serialization_with_custom_objects(tmp_path):
 
 
 def test_resolve_log_dir(tmp_path):
-    from bat_core.engine.logger import resolve_log_dir
+    from batautomate.engine.logger import resolve_log_dir
 
     # 1. Custom log dir explicitly specified
     custom = resolve_log_dir(str(tmp_path / "my_logs"))
