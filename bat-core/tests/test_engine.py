@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
 import pytest
-from bat_core.models.flow import FlowDefinition, Step
-from bat_core.engine.interpreter import FlowInterpreter
-from bat_core.engine.evaluator import VariableEvaluator
+from batautomate.models.flow import FlowDefinition, Step
+from batautomate.engine.interpreter import FlowInterpreter
+from batautomate.engine.evaluator import VariableEvaluator
 
 
 def test_variable_evaluator():
@@ -51,4 +51,44 @@ def test_interpreter_load_sample_flow_json():
     assert ctx.is_completed is True
     assert ctx.has_error is False
     assert len(ctx.step_results) == 3
+
+
+def test_logger_safe_serialization_with_custom_objects(tmp_path):
+    from batautomate.models.context import ExecutionContext
+    from batautomate.engine.logger import ExecutionLogger
+
+    class NonSerializableClass:
+        def __repr__(self):
+            return "<CustomObject>"
+
+    ctx = ExecutionContext(flow_name="Test Safe Serialization")
+    ctx.set_variable("__internal_obj__", NonSerializableClass())
+    ctx.set_variable("normal_var", 123)
+    ctx.set_variable("custom_obj", NonSerializableClass())
+
+    logger = ExecutionLogger(log_dir=str(tmp_path))
+    # Should not raise PydanticSerializationError
+    logger.log_execution_summary(ctx)
+
+    log_files = list(tmp_path.glob("*/*/*.json"))
+    assert len(log_files) == 1
+    content = json.loads(log_files[0].read_text(encoding="utf-8"))
+    assert "__internal_obj__" not in content["variables"]
+    assert content["variables"]["normal_var"] == 123
+    assert content["variables"]["custom_obj"] == "<CustomObject>"
+
+
+def test_resolve_log_dir(tmp_path):
+    from batautomate.engine.logger import resolve_log_dir
+
+    # 1. Custom log dir explicitly specified
+    custom = resolve_log_dir(str(tmp_path / "my_logs"))
+    assert custom == (tmp_path / "my_logs").resolve()
+
+    # 2. Inside project structure (containing .git or bat-core)
+    # The current repo has root at BatAutomate
+    resolved = resolve_log_dir()
+    assert (resolved.parent / "bat-core").exists() or (resolved.parent / ".git").exists()
+    assert resolved.name == "logs"
+
 
