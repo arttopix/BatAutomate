@@ -1,17 +1,17 @@
 # BAT Automate
 
-> **Open-Source, Python-Powered Enterprise RPA Platform**  
-> Eliminate soaring commercial RPA licensing costs with an end-to-end automation suite, business-first ROI dashboard, and 100% free unattended robots.
+> **Open-Source, Local AI-Native Agentic Automation Framework**  
+> Next-generation Enterprise RPA powered by Python and on-device SLMs. Eliminate soaring commercial licensing costs with autonomous agent workflows, zero-license Excel automation, and 100% free unattended robots.
 
 ---
 
 ## Key Highlights
 
+- **Local AI-Native Architecture:** Architected from the ground up for on-device Small Language Models (SLMs) running 100% locally on CPU (e.g. Qwen, Llama). Powers autonomous flow generation, self-healing UI selectors, and plain-language error diagnosis with zero API token costs and complete data privacy.
 - **Zero-License Dependency:** No Microsoft 365 or Microsoft Excel installation required for spreadsheet operations (processed natively via `openpyxl` and `pandas`).
 - **Business-First Dashboard:** Tailored for executives and business leaders with transparent metrics on Return on Investment (ROI), total hours saved, and tangible cost reductions.
-- **Free Unlimited Unattended Workers:** Deploy robot worker daemons across any existing VMs or workstations with zero per-bot monthly licensing fees.
+- **Free Unlimited Unattended Workers:** Deploy robot worker daemons across any existing VMs, PCs, or edge devices (e.g., Raspberry Pi) with zero per-bot monthly licensing fees.
 - **Python Power & Extensibility:** Easily extend capabilities with standard Python, integrating seamlessly with modern Web automation (Playwright), REST APIs, SQL databases, and AI models.
-- **Local AI Ready (Future-Proof):** Architected to support lightweight, CPU-runnable Small Language Models (SLMs) for Studio Copilot and automated business-friendly error explanations.
 
 ---
 
@@ -40,7 +40,7 @@ BatAutomate/
 
 | Module | Role & Responsibility | Core Technology Stack |
 | :--- | :--- | :--- |
-| **BAT Core (`bat-core`)** | Execution engine, Flow JSON interpreter, variable state manager, Web & Excel automation | Python, Playwright, Pandas, OpenPyXL |
+| **BAT Core (`bat-core`)** | Execution engine, Flow JSON and Agentic Subflow interpreter, variable state manager, Web & Excel automation | Python, Playwright, Pandas, OpenPyXL |
 | **BAT Studio (`bat-studio`)** | Cross-platform desktop app for visual drag-and-drop workflow authoring & UI inspector | Tauri, React, React Flow, TypeScript |
 | **BAT Orchestrator (`bat-orchestrator`)** | Centralized management hub, cron/trigger scheduler, executive ROI dashboard, and alerting | FastAPI, PostgreSQL, Redis, React, TailwindCSS |
 | **BAT Worker (`bat-worker`)** | Background daemon deployed on execution targets receiving jobs via WebSocket | Python Service, WebSocket |
@@ -70,8 +70,10 @@ BatAutomate/
 - [ ] **Phase 5: Desktop Automation & Community Open Source Release**
   - Native Windows desktop automation integration (`uiautomation`)
   - 1-Click Docker Compose deployment and GitHub community quickstart documentation
-- [ ] **Phase 6: Local AI & Copilot Integration (Future Phase)**
-  - Local CPU-based SLM support (such as Qwen 2.5) for Studio Copilot and plain-language root-cause analysis
+- [ ] **Phase 6: Local AI-Native Agentic Capabilities**
+  - On-device CPU Small Language Model (SLM) integration (e.g., Qwen 2.5, Llama 3.2 via GGUF/Ollama)
+  - Self-healing UI selectors and autonomous agentic decision steps
+  - Studio Copilot for natural language flow generation and plain-language root-cause analysis
 
 ---
 

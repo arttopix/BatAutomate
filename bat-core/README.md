@@ -1,6 +1,6 @@
 # bat-core
 
-Execution Runtime Engine and Standard Action Libraries for BAT Automate RPA Platform.
+Execution Runtime Engine, Action Libraries, and Agentic Subflow Interpreter for BAT Automate: The Open-Source, Local AI-Native Agentic Automation Framework.
 
 ## Directory Structure
 
@@ -39,7 +39,7 @@ bat-core/
 
 ## คู่มือการใช้งานและการสั่งรันคำสั่ง (CLI Execution Guide)
 
-โมดูล `bat-core` สามารถสั่งรันกระบวนการอัตโนมัติ (RPA Flow) ผ่าน Command Line Interface (CLI) ได้ดังนี้:
+โมดูล `bat-core` ทำหน้าที่เป็น Runtime Engine สำหรับรันกระบวนการอัตโนมัติ (Flow & Agentic Tasks) ผ่าน Command Line Interface (CLI) ได้ดังนี้:
 
 ### 1. การติดตั้งแบบ Editable (สำหรับการพัฒนา)
 
@@ -134,7 +134,7 @@ logs/
 
 ## สถาปัตยกรรมโครงสร้างโฟลเดอร์โปรเจกต์และระบบ Subflow (Modular Flow Architecture)
 
-เพื่อรองรับระบบ RPA ระดับองค์กรที่มีหลายกระบวนการและมีการเรียกใช้ Flow ซ้อนกัน ระบบกำหนดโครงสร้างมาตรฐานแบบ **Self-Contained Project Bundle**:
+เพื่อรองรับกระบวนการอัตโนมัติระดับองค์กร (Enterprise Agentic Automation) ที่มีหลายกระบวนการและมีการเรียกใช้ Subflow ซ้อนกันอย่างเป็นระบบ โครงสร้างถูกออกแบบในรูปแบบ **Self-Contained Project Bundle**:
 
 ### 1. โครงสร้างโฟลเดอร์แบบแบ่งตามโครงการ (Project Directory Structure)
 
