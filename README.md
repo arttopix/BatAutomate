@@ -1,3 +1,5 @@
+https://buymeacoffee.com/arttopix
+
 # BAT Automate
 
 > **Open-Source, Local AI-Native Agentic Automation Framework**  
