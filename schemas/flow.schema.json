@@ -63,7 +63,7 @@
           "title": "Description"
         },
         "action": {
-          "description": "Action identifier (e.g. web.open, web.click, web.type, web.get_text, web.screenshot, web.close, excel.read, excel.write, logic.if, logic.loop, logic.append, logic.set_variable, logic.delay, http.request)",
+          "description": "Action identifier (e.g. web.open, web.click, web.type, web.get_text, web.screenshot, web.close, excel.read, excel.write, logic.if, logic.loop, logic.append, logic.set_variable, logic.delay, flow.call, flow.return, email.send, http.request)",
           "title": "Action",
           "type": "string"
         },

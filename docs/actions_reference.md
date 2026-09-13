@@ -24,6 +24,11 @@ This document provides a comprehensive specification of standard actions availab
    - [logic.append](#logicappend)
 4. [HTTP API Integration (`http.*`)](#http-api-integration-http)
    - [http.request](#httprequest)
+5. [Modular Subflows and Flow Control (`flow.*`)](#modular-subflows-and-flow-control-flow)
+   - [flow.call](#flowcall)
+   - [flow.return](#flowreturn)
+6. [Email Notification (`email.*`)](#email-notification-email)
+   - [email.send](#emailsend)
 
 ---
 
@@ -433,5 +438,121 @@ Executes an HTTP request and outputs status code, response headers, and body.
     }
   },
   "output_var": "api_response"
+}
+```
+
+---
+
+## Modular Subflows and Flow Control (`flow.*`)
+
+Enables breaking large enterprise automations into clean, isolated, reusable child flows (subflows) located within the same project bundle or across global `@shared/` components. Adopts **Contract-First Design (`flow.return` + `output_var`)**, matching modern AI agent tool-calling paradigms.
+
+### `flow.call`
+Executes an external child flow (subflow) within an isolated context.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `flow` | string | Yes | - | Path to child flow (`./subflows/name.json`, `@shared/name.json`, or alias) |
+| `inputs` | dict | No | `{}` | Arguments passed into the subflow (evaluated in parent context) |
+| `propagate_sessions` | boolean | No | `true` | Share active Playwright browser sessions with child flow |
+| `outputs` | dict | No | `null` | Optional direct mapping from child variables to parent variables |
+
+**Variable Resolution & Priority:**
+1. **Subflow Defaults:** Initial variables declared in the subflow definition.
+2. **Inputs:** Values explicitly passed via `inputs` parameter (overrides defaults).
+3. **System Variables:** Internal paths (`__flow_dir__`, `__parent_flow__`) and shared sessions.
+
+**Safeguards & Protections:**
+- **Max Depth:** Enforces maximum call nesting limit (default: 10 levels) to prevent memory exhaustion.
+- **Circular Call Detection:** Detects and immediately blocks circular recursion (e.g. A calling B calling A).
+- **Browser Safeguard:** If a subflow calls `web.close` while sharing the parent's browser, the engine intercepts the call and protects the parent's active browser session.
+
+**Example:**
+```json
+{
+  "id": "step_send_alert",
+  "name": "Send Reusable LINE Alert",
+  "action": "flow.call",
+  "parameters": {
+    "flow": "@shared/notify_line.json",
+    "inputs": {
+      "message": "Invoice #4891 verified successfully",
+      "recipient": "Finance Lead",
+      "alert_level": "SUCCESS"
+    }
+  },
+  "output_var": "alert_result"
+}
+```
+
+---
+
+### `flow.return`
+Stops subflow execution early and returns a structured payload to the caller's `output_var`.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `value` | any | Yes | - | Payload (dict, list, string, number, or boolean) returned to parent flow |
+
+**Example:**
+```json
+{
+  "id": "step_return_payload",
+  "name": "Return Extracted Data",
+  "action": "flow.return",
+  "parameters": {
+    "value": {
+      "status": "success",
+      "records_count": "${total_count}",
+      "file_path": "${saved_pdf}"
+    }
+  }
+}
+```
+
+---
+
+## Email Notification (`email.*`)
+
+Enables sending automated email notifications and attachments via SMTP (e.g. Gmail SMTP, Outlook 365, or local enterprise mail servers).
+
+### `email.send`
+Constructs and dispatches an email message with support for plain text, HTML body, attachments, CC, and BCC.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `to` | string / list | Yes | - | Primary recipient email address or list of addresses |
+| `subject` | string | No | `"BAT Automate Notification"` | Subject line of the email |
+| `body` | string | No | `""` | Plain-text email message body |
+| `html` | string | No | `null` | Optional rich HTML email body |
+| `cc` | string / list | No | `null` | Carbon copy recipient address(es) |
+| `bcc` | string / list | No | `null` | Blind carbon copy recipient address(es) |
+| `attachments` | list | No | `[]` | List of file paths to attach (relative to flow or absolute) |
+| `smtp_host` | string | No | `"smtp.gmail.com"` | SMTP server hostname (or `${env.SMTP_HOST}`) |
+| `smtp_port` | number | No | `587` | SMTP port (typically 587 for TLS, 465 for SSL) |
+| `smtp_user` | string | No | `${env.GMAIL_USER}` | Sender username / email address |
+| `smtp_password` | string | No | `${env.GMAIL_APP_PASSWORD}` | Sender password / Google App Password |
+| `use_tls` | boolean | No | `true` | Establish STARTTLS secure connection |
+| `dry_run` | boolean | No | `false` | When true, formats message without sending to SMTP |
+
+**Example:**
+```json
+{
+  "id": "step_send_report",
+  "name": "Send Daily Processing Report",
+  "action": "email.send",
+  "parameters": {
+    "to": "manager@company.com",
+    "subject": "Daily RPA Processing Summary - [${status}]",
+    "body": "Hello,\n\nThe automated workflow has completed successfully.\nProcessed records: ${count}",
+    "attachments": [
+      "./assets/daily_summary.xlsx"
+    ],
+    "dry_run": false
+  },
+  "output_var": "email_result"
 }
 ```

@@ -138,6 +138,13 @@ class WebScreenshotAction(BaseAction):
 @register_action("web.close")
 class WebCloseAction(BaseAction):
     def execute(self, parameters: Dict[str, Any], context: ExecutionContext) -> Any:
+        if context.get_variable("__shared_browser__"):
+            logger.warning(
+                "Safeguard: 'web.close' was invoked inside a subflow sharing parent browser session. "
+                "Skipping browser closure to protect parent workflow."
+            )
+            return {"status": "skipped", "reason": "protected_shared_browser"}
+
         browser: Optional[Browser] = context.get_variable("__playwright_browser__")
         pw: Optional[Playwright] = context.get_variable("__playwright_pw__")
 

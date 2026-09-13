@@ -1,9 +1,13 @@
+import json
+import os
 from datetime import datetime
-from typing import Any, Dict, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from .evaluator import VariableEvaluator
 from .logger import ExecutionLogger
 from ..actions.registry import ActionRegistry
+from ..actions.flow_control import SubflowExecutionError
 from ..models.context import ExecutionContext, StepResult, FailureDetails
 from ..models.flow import FlowDefinition, Step
 
@@ -11,17 +15,28 @@ from ..models.flow import FlowDefinition, Step
 class FlowInterpreter:
     """
     Interpreter that parses FlowDefinition, evaluates expressions, and executes steps sequentially.
+    Supports modular subflow execution (flow.call), early exit (flow.return), and hierarchical logging.
     """
 
-    def __init__(self, logger: Optional[ExecutionLogger] = None):
+    def __init__(
+        self,
+        logger: Optional[ExecutionLogger] = None,
+        max_depth: int = 10,
+        call_stack: Optional[List[str]] = None
+    ):
         self.logger = logger or ExecutionLogger()
+        self.max_depth = max_depth
+        self.call_stack: List[str] = call_stack or []
 
     def _diagnose_failure(self, step: Step, exc: Exception) -> FailureDetails:
         exc_class = type(exc).__name__
         err_msg = str(exc)
         error_type = "Business" if "Business" in exc_class else "Technical"
 
-        if isinstance(exc, FileNotFoundError) or ("not found" in err_msg.lower() and "file" in err_msg.lower()):
+        if isinstance(exc, SubflowExecutionError):
+            root_cause = f"Subflow execution failed in '{exc.subflow_name}': {err_msg}"
+            suggested_fix = f"Inspect child subflow '{exc.subflow_name}' definition and input parameters passed in step '{step.id}'."
+        elif isinstance(exc, FileNotFoundError) or ("not found" in err_msg.lower() and "file" in err_msg.lower()):
             root_cause = f"Required file was not found during execution of step '{step.name}'."
             suggested_fix = "Verify the target file path exists and that relative paths are correctly anchored to the flow project directory."
         elif "timeout" in err_msg.lower() or "waiting for" in err_msg.lower():
@@ -51,6 +66,15 @@ class FlowInterpreter:
     def run_flow(self, flow_def: FlowDefinition, initial_vars: Optional[Dict[str, Any]] = None) -> ExecutionContext:
         context = ExecutionContext(flow_name=flow_def.name)
 
+        if initial_vars:
+            for k, v in initial_vars.items():
+                context.set_variable(k, v)
+
+        # Auto-load project configuration (config.json & .env) from flow bundle directory
+        flow_dir_str = context.get_variable("__flow_dir__")
+        if flow_dir_str:
+            self._load_bundle_configs(Path(flow_dir_str), context)
+
         if flow_def.variables:
             for k, v in flow_def.variables.items():
                 context.set_variable(k, v)
@@ -63,10 +87,24 @@ class FlowInterpreter:
 
         try:
             for step in flow_def.steps:
+                if context.get_variable("__early_exit__"):
+                    break
                 self._execute_step(step, context)
             context.is_completed = True
         except Exception as e:
             context.has_error = True
+            if context.failure_details is None:
+                exc_class = type(e).__name__
+                context.failure_details = FailureDetails(
+                    failed_step_id="flow_run",
+                    failed_step_name="Flow Execution",
+                    action="flow.run",
+                    error_type="Technical",
+                    exception_class=exc_class,
+                    error_message=str(e),
+                    root_cause=f"Flow execution failed with unhandled exception: {str(e)}",
+                    suggested_fix="Inspect execution logs and subflow definitions."
+                )
             self.logger.logger.error(f"Flow execution failed with unhandled exception: {str(e)}")
 
         end_time = datetime.now()
@@ -82,6 +120,9 @@ class FlowInterpreter:
         return context
 
     def _execute_step(self, step: Step, context: ExecutionContext) -> None:
+        if context.get_variable("__early_exit__"):
+            return
+
         self.logger.log_step_start(step.id, step.name, step.action)
         start_time = datetime.now()
 
@@ -93,6 +134,7 @@ class FlowInterpreter:
                 result = StepResult(
                     step_id=step.id,
                     step_name=step.name,
+                    action=step.action,
                     status="skipped",
                     start_time=start_time,
                     end_time=datetime.now(),
@@ -109,6 +151,40 @@ class FlowInterpreter:
 
         if step.action == "logic.if":
             self._handle_if_step(step, evaluated_params, context, start_time)
+            return
+
+        if step.action == "flow.call":
+            try:
+                self._handle_flow_call_step(step, evaluated_params, context, start_time)
+            except Exception as e:
+                end_time = datetime.now()
+                duration = (end_time - start_time).total_seconds()
+                failure_diag = self._diagnose_failure(step, e)
+
+                result = StepResult(
+                    step_id=step.id,
+                    step_name=step.name,
+                    action=step.action,
+                    status="failed",
+                    start_time=start_time,
+                    end_time=end_time,
+                    duration_seconds=duration,
+                    error_message=str(e),
+                    error_type=failure_diag.error_type
+                )
+                context.step_results.append(result)
+                self.logger.log_step_result(result)
+
+                if context.failure_details is None:
+                    context.failure_details = failure_diag
+
+                if step.error_handler and step.error_handler.on_error == "continue":
+                    return
+                raise e
+            return
+
+        if step.action == "flow.return":
+            self._handle_flow_return_step(step, evaluated_params, context, start_time)
             return
 
         try:
@@ -170,9 +246,13 @@ class FlowInterpreter:
             items = [items]
 
         for index, item in enumerate(items):
+            if context.get_variable("__early_exit__"):
+                break
             context.set_variable(item_var, item)
             context.set_variable(f"{item_var}_index", index)
             for sub_step in sub_steps:
+                if context.get_variable("__early_exit__"):
+                    break
                 self._execute_step(sub_step, context)
 
         end_time = datetime.now()
@@ -181,6 +261,7 @@ class FlowInterpreter:
         result = StepResult(
             step_id=step.id,
             step_name=step.name,
+            action=step.action,
             status="success",
             start_time=start_time,
             end_time=end_time,
@@ -207,12 +288,16 @@ class FlowInterpreter:
 
         if condition_met:
             for sub_step in sub_steps:
+                if context.get_variable("__early_exit__"):
+                    break
                 self._execute_step(sub_step, context)
             executed_count = len(sub_steps)
             branch = "then"
             status = "success"
         elif else_steps:
             for else_step in else_steps:
+                if context.get_variable("__early_exit__"):
+                    break
                 self._execute_step(else_step, context)
             executed_count = len(else_steps)
             branch = "else"
@@ -226,6 +311,7 @@ class FlowInterpreter:
         result = StepResult(
             step_id=step.id,
             step_name=step.name,
+            action=step.action,
             status=status,
             start_time=start_time,
             end_time=end_time,
@@ -238,6 +324,237 @@ class FlowInterpreter:
                 "right": right,
                 "executed_steps": executed_count
             }
+        )
+        context.step_results.append(result)
+        self.logger.log_step_result(result)
+
+    def _load_bundle_configs(self, flow_dir: Path, context: ExecutionContext) -> None:
+        if not flow_dir.is_dir():
+            return
+
+        # 1. Auto-load config.json
+        config_file = flow_dir / "config.json"
+        if config_file.is_file():
+            try:
+                config_data = json.loads(config_file.read_text(encoding="utf-8"))
+                if isinstance(config_data, dict):
+                    context.set_variable("config", config_data)
+                    for k, v in config_data.items():
+                        if k not in context.variables:
+                            context.set_variable(k, v)
+                    self.logger.logger.info(f"Loaded project configuration from {config_file.name} ({len(config_data)} keys)")
+            except Exception as e:
+                self.logger.logger.warning(f"Failed to load config from {config_file}: {str(e)}")
+
+        # 2. Auto-load local .env (if present)
+        env_file = flow_dir / ".env"
+        if env_file.is_file():
+            try:
+                self._load_env_file(env_file)
+                self.logger.logger.info(f"Loaded environment secrets from {env_file.name}")
+            except Exception as e:
+                self.logger.logger.warning(f"Failed to load .env from {env_file}: {str(e)}")
+
+    def _load_env_file(self, env_path: Path) -> None:
+        lines = env_path.read_text(encoding="utf-8").splitlines()
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            k = k.strip()
+            v = v.strip().strip("'\"")
+            if k and k not in os.environ:
+                os.environ[k] = v
+
+    def _resolve_subflow_path(self, flow_target: str, context: ExecutionContext) -> Path:
+        target_str = str(flow_target).strip()
+
+        # 1. Namespace @shared/
+        if target_str.startswith("@shared/"):
+            rel_shared = target_str[8:]
+            flow_dir_str = context.get_variable("__flow_dir__")
+            candidates = []
+            if flow_dir_str:
+                p = Path(flow_dir_str).resolve()
+                for parent in [p] + list(p.parents):
+                    candidates.append(parent / "flows" / "@shared" / rel_shared)
+                    candidates.append(parent / "@shared" / rel_shared)
+            candidates.append(Path.cwd() / "flows" / "@shared" / rel_shared)
+            candidates.append(Path.home() / ".batautomate" / "flows" / "@shared" / rel_shared)
+            for c in candidates:
+                if c.is_file():
+                    return c.resolve()
+                if c.with_suffix(".json").is_file():
+                    return c.with_suffix(".json").resolve()
+
+        # 2. Relative to parent flow directory
+        flow_dir_str = context.get_variable("__flow_dir__")
+        if flow_dir_str:
+            parent_dir = Path(flow_dir_str).resolve()
+            candidates = [
+                (parent_dir / target_str).resolve(),
+                (parent_dir / f"{target_str}.json").resolve(),
+            ]
+            for c in candidates:
+                if c.is_file():
+                    return c
+
+        # 3. Direct path or relative to current working directory
+        direct = Path(target_str).resolve()
+        if direct.is_file():
+            return direct
+        if Path(f"{target_str}.json").is_file():
+            return Path(f"{target_str}.json").resolve()
+
+        # 4. Fallback to CLI search
+        try:
+            from ..cli import resolve_flow_path
+            resolved = resolve_flow_path(target_str)
+            if resolved and resolved.is_file():
+                return resolved.resolve()
+        except Exception:
+            pass
+
+        raise FileNotFoundError(f"Subflow file not found: '{flow_target}'")
+
+    def _handle_flow_call_step(self, step: Step, evaluated_params: Dict[str, Any], context: ExecutionContext, start_time: datetime) -> None:
+        flow_target = evaluated_params.get("flow")
+        if not flow_target:
+            raise ValueError(f"Step '{step.id}' (flow.call) requires 'flow' parameter specifying path to target flow JSON")
+
+        resolved_path = self._resolve_subflow_path(flow_target, context)
+        canonical_key = str(resolved_path)
+
+        # 1. Enforce max_depth recursion safety
+        if len(self.call_stack) >= self.max_depth:
+            raise SubflowExecutionError(
+                f"Subflow call depth limit of {self.max_depth} exceeded. Current stack: {' -> '.join(self.call_stack)}",
+                subflow_name=flow_target,
+                failed_step_id=step.id
+            )
+
+        # 2. Prevent Circular Subflow Invocation
+        if canonical_key in self.call_stack:
+            raise SubflowExecutionError(
+                f"Circular subflow call detected: {' -> '.join(self.call_stack)} -> {canonical_key}",
+                subflow_name=flow_target,
+                failed_step_id=step.id
+            )
+
+        # 3. Load child FlowDefinition
+        try:
+            data = json.loads(resolved_path.read_text(encoding="utf-8"))
+            subflow_def = FlowDefinition.model_validate(data)
+        except Exception as e:
+            raise RuntimeError(f"Failed to load subflow definition from '{resolved_path}': {str(e)}") from e
+
+        # 4. Variable Priority Order:
+        # 4.1 Subflow defaults
+        child_vars = dict(subflow_def.variables) if subflow_def.variables else {}
+
+        # 4.2 Inputs from parent flow (overrides defaults)
+        inputs = evaluated_params.get("inputs", {})
+        if isinstance(inputs, dict):
+            for k, v in inputs.items():
+                child_vars[k] = v
+
+        # 4.3 System variables
+        child_vars["__flow_dir__"] = str(resolved_path.parent)
+        child_vars["__parent_flow__"] = context.flow_name
+        child_vars["__is_subflow__"] = True
+
+        # 4.4 Safeguard & Browser Session Propagation
+        if evaluated_params.get("propagate_sessions", True):
+            pw = context.get_variable("__playwright_pw__")
+            browser = context.get_variable("__playwright_browser__")
+            page = context.get_variable("__playwright_page__")
+            if pw:
+                child_vars["__playwright_pw__"] = pw
+            if browser:
+                child_vars["__playwright_browser__"] = browser
+                child_vars["__shared_browser__"] = True  # Safeguard signal
+            if page:
+                child_vars["__playwright_page__"] = page
+
+        # 5. Spawn child interpreter with incremented call stack
+        new_stack = list(self.call_stack) + [canonical_key]
+        child_interpreter = FlowInterpreter(
+            logger=self.logger,
+            max_depth=self.max_depth,
+            call_stack=new_stack
+        )
+
+        child_context = child_interpreter.run_flow(subflow_def, initial_vars=child_vars)
+
+        if child_context.has_error:
+            failed_id = child_context.failure_details.failed_step_id if child_context.failure_details else "unknown"
+            err_msg = child_context.failure_details.error_message if child_context.failure_details else "Child subflow failed"
+            raise SubflowExecutionError(
+                f"Subflow '{subflow_def.name}' failed at step '{failed_id}': {err_msg}",
+                subflow_name=subflow_def.name,
+                failed_step_id=failed_id,
+                child_context=child_context
+            )
+
+        # 6. Method 2: Contract-First Return Payload
+        child_return = child_context.get_variable("__return_value__")
+        if child_return is None:
+            child_return = {
+                k: v for k, v in child_context.variables.items()
+                if not k.startswith("__")
+            }
+
+        if step.output_var:
+            context.set_variable(step.output_var, child_return)
+
+        # Optional direct outputs mapping if configured
+        outputs_map = evaluated_params.get("outputs")
+        if isinstance(outputs_map, dict):
+            for sub_k, parent_k in outputs_map.items():
+                if sub_k in child_context.variables:
+                    context.set_variable(parent_k, child_context.variables[sub_k])
+
+        end_time = datetime.now()
+        duration = (end_time - start_time).total_seconds()
+
+        # 7. Hierarchical Logging: subflow steps grouped inside parent step output
+        result = StepResult(
+            step_id=step.id,
+            step_name=step.name,
+            action=step.action,
+            status="success",
+            start_time=start_time,
+            end_time=end_time,
+            duration_seconds=duration,
+            output={
+                "subflow_name": subflow_def.name,
+                "subflow_path": str(resolved_path),
+                "return_value": child_return,
+                "subflow_metrics": child_context.metrics.model_dump(),
+                "subflow_steps": [r.model_dump() for r in child_context.step_results]
+            }
+        )
+        context.step_results.append(result)
+        self.logger.log_step_result(result)
+
+    def _handle_flow_return_step(self, step: Step, evaluated_params: Dict[str, Any], context: ExecutionContext, start_time: datetime) -> None:
+        value = evaluated_params.get("value")
+        context.set_variable("__return_value__", value)
+        context.set_variable("__early_exit__", True)
+
+        end_time = datetime.now()
+        duration = (end_time - start_time).total_seconds()
+
+        result = StepResult(
+            step_id=step.id,
+            step_name=step.name,
+            action=step.action,
+            status="success",
+            start_time=start_time,
+            end_time=end_time,
+            duration_seconds=duration,
+            output={"returned": value, "early_exit": True}
         )
         context.step_results.append(result)
         self.logger.log_step_result(result)

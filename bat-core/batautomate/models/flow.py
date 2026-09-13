@@ -19,7 +19,7 @@ class Step(BaseModel):
     id: str = Field(..., description="Unique step identifier (e.g. step_1, sub_check_programmer)")
     name: str = Field(..., description="Human-readable name describing what this step does")
     description: Optional[str] = Field(default=None, description="Optional detailed business intent or technical explanation")
-    action: str = Field(..., description="Action identifier (e.g. web.open, web.click, web.type, web.get_text, web.screenshot, web.close, excel.read, excel.write, logic.if, logic.loop, logic.append, logic.set_variable, logic.delay, http.request)")
+    action: str = Field(..., description="Action identifier (e.g. web.open, web.click, web.type, web.get_text, web.screenshot, web.close, excel.read, excel.write, logic.if, logic.loop, logic.append, logic.set_variable, logic.delay, flow.call, flow.return, email.send, http.request)")
     parameters: Dict[str, Any] = Field(default_factory=dict, description="Key-value parameters passed to the action")
     output_var: Optional[str] = Field(default=None, description="Variable name to store the return value in context")
     sub_steps: Optional[List["Step"]] = Field(default=None, description="Child steps for logic.loop or when logic.if evaluates to true")

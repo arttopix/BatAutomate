@@ -11,13 +11,14 @@ Enterprise automation workflows often contain multiple sub-processes, data files
 ```text
 flows/
 ├── @shared/                                # Cross-project reusable library
-│   ├── notify_line.json                    # LINE Alert subflow
 │   ├── web_login_sso.json                  # SSO login component
-│   └── send_email.json
+│   └── send_email.json                     # Reusable Gmail/SMTP component
 │
 └── accounting/                             # Department / Business Domain
     └── invoice_tax_filing/                 # 1 Self-Contained Project Bundle
         ├── flow.json                       # Main Entry Point
+        ├── config.json                     # Project-specific configuration (Auto-loaded)
+        ├── .env                            # Optional local secrets (Git-ignored)
         ├── subflows/                       # Project-specific subflows
         │   ├── download_tax_pdf.json
         │   └── extract_table.json
@@ -29,6 +30,8 @@ flows/
 - **Portability:** All references to assets and subflows inside a project bundle use **Relative Paths** (e.g. `./assets/tax_template.xlsx`, `./subflows/extract_table.json`).
 - **No Hardcoded Absolute Paths:** Workflows never depend on developer-specific paths (e.g., `C:\Users\Dev\...`), ensuring seamless portability across different machines, VMs, or operating systems.
 - **Atomic Units:** A single project directory represents one coherent unit of business automation that can be developed, tested, versioned, and deployed as a standalone bundle.
+- **Decoupled Settings (`config.json`):** Engine automatically auto-loads `config.json` from the flow bundle directory into `${config.*}` and top-level variables. Business users or admins can modify endpoints, email recipients, or thresholds without altering `flow.json`.
+- **Local Secrets (`.env`):** Optional project-level `.env` is automatically parsed and mapped to `${env.*}` for local execution without leaking credentials to version control.
 
 ---
 
