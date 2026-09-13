@@ -332,8 +332,10 @@ class FlowInterpreter:
         if not flow_dir.is_dir():
             return
 
-        # 1. Auto-load config.json
+        # 1. Primary Check: config.json (with warning & template fallback like standard RPA)
         config_file = flow_dir / "config.json"
+        template_file = flow_dir / "config.template.json"
+
         if config_file.is_file():
             try:
                 config_data = json.loads(config_file.read_text(encoding="utf-8"))
@@ -345,6 +347,23 @@ class FlowInterpreter:
                     self.logger.logger.info(f"Loaded project configuration from {config_file.name} ({len(config_data)} keys)")
             except Exception as e:
                 self.logger.logger.warning(f"Failed to load config from {config_file}: {str(e)}")
+        elif template_file.is_file():
+            self.logger.logger.warning(
+                f"Configuration file 'config.json' was not found in '{flow_dir.name}'. "
+                f"Falling back to default '{template_file.name}'. "
+                f"(Tip: Copy '{template_file.name}' to 'config.json' to customize your project settings)."
+            )
+            try:
+                config_data = json.loads(template_file.read_text(encoding="utf-8"))
+                if isinstance(config_data, dict):
+                    context.set_variable("config", config_data)
+                    for k, v in config_data.items():
+                        if k not in context.variables:
+                            context.set_variable(k, v)
+            except Exception as e:
+                self.logger.logger.warning(f"Failed to load template config from {template_file}: {str(e)}")
+        else:
+            self.logger.logger.debug(f"No configuration file ('config.json') found in '{flow_dir.name}'.")
 
         # 2. Auto-load local .env (if present)
         env_file = flow_dir / ".env"

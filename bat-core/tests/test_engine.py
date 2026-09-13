@@ -636,5 +636,36 @@ def test_auto_load_flow_local_env(tmp_path):
     assert ctx.get_variable("token_val") == "super_secret_token_abc123"
 
 
+def test_auto_load_flow_config_template_fallback(tmp_path):
+    bundle_dir = tmp_path / "fallback_bundle"
+    bundle_dir.mkdir()
+
+    # Only config.template.json exists (config.json does not exist yet)
+    template_data = {
+        "api_endpoint": "https://api.template.example.com",
+        "timeout": 45
+    }
+    (bundle_dir / "config.template.json").write_text(json.dumps(template_data), encoding="utf-8")
+
+    flow_def = FlowDefinition(
+        name="Fallback Template Bundle",
+        steps=[
+            Step(
+                id="s1",
+                name="Read Endpoint",
+                action="logic.set_variable",
+                parameters={"name": "ep", "value": "${config.api_endpoint}"},
+                output_var="ep"
+            )
+        ]
+    )
+
+    interpreter = FlowInterpreter()
+    ctx = interpreter.run_flow(flow_def, initial_vars={"__flow_dir__": str(bundle_dir)})
+
+    assert ctx.is_completed is True
+    assert ctx.get_variable("ep") == "https://api.template.example.com"
+
+
 
 

@@ -21,3 +21,7 @@ dist/
 *.log
 .env
 logs/
+
+# Flow Project Bundle Configurations (Keep templates, ignore local configs)
+config.json
+!*.template.json
