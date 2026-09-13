@@ -1,0 +1,202 @@
+{
+  "$defs": {
+    "ErrorHandlerConfig": {
+      "properties": {
+        "on_error": {
+          "default": "stop",
+          "description": "Action on error: stop, continue, or retry",
+          "title": "On Error",
+          "type": "string"
+        },
+        "max_retries": {
+          "default": 0,
+          "description": "Maximum retry attempts if on_error is retry",
+          "title": "Max Retries",
+          "type": "integer"
+        },
+        "retry_interval": {
+          "default": 1.0,
+          "description": "Seconds to wait between retry attempts",
+          "title": "Retry Interval",
+          "type": "number"
+        },
+        "fallback_step_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Step ID to jump to upon error",
+          "title": "Fallback Step Id"
+        }
+      },
+      "title": "ErrorHandlerConfig",
+      "type": "object"
+    },
+    "Step": {
+      "properties": {
+        "id": {
+          "description": "Unique step identifier (e.g. step_1, sub_check_programmer)",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "description": "Human-readable name describing what this step does",
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional detailed business intent or technical explanation",
+          "title": "Description"
+        },
+        "action": {
+          "description": "Action identifier (e.g. web.open, web.click, web.type, web.get_text, web.screenshot, web.close, excel.read, excel.write, logic.if, logic.loop, logic.append, logic.set_variable, logic.delay, http.request)",
+          "title": "Action",
+          "type": "string"
+        },
+        "parameters": {
+          "additionalProperties": true,
+          "description": "Key-value parameters passed to the action",
+          "title": "Parameters",
+          "type": "object"
+        },
+        "output_var": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Variable name to store the return value in context",
+          "title": "Output Var"
+        },
+        "sub_steps": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Step"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Child steps for logic.loop or when logic.if evaluates to true",
+          "title": "Sub Steps"
+        },
+        "else_steps": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Step"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Child steps executed when logic.if evaluates to false",
+          "title": "Else Steps"
+        },
+        "error_handler": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ErrorHandlerConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Step-level error handling strategy"
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional execution condition expression (e.g. '${row.Status} == Active')",
+          "title": "Condition"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "action"
+      ],
+      "title": "Step",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "name": {
+      "description": "Name of the RPA automation flow",
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "High-level description of business purpose and scope",
+      "title": "Description"
+    },
+    "version": {
+      "default": "1.0.0",
+      "description": "Semantic version of the flow definition",
+      "title": "Version",
+      "type": "string"
+    },
+    "variables": {
+      "additionalProperties": true,
+      "description": "Initial context variables accessible via ${var_name}",
+      "title": "Variables",
+      "type": "object"
+    },
+    "steps": {
+      "description": "Sequential steps to execute",
+      "items": {
+        "$ref": "#/$defs/Step"
+      },
+      "title": "Steps",
+      "type": "array"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "BAT Automate Flow Definition Schema",
+  "type": "object",
+  "": "https://json-schema.org/draft/2020-12/schema"
+}

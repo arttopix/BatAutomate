@@ -92,3 +92,174 @@ def test_resolve_log_dir(tmp_path):
     assert resolved.name == "logs"
 
 
+def test_logic_if_action():
+    # 1. True condition
+    flow_true = FlowDefinition(
+        name="Test If True",
+        variables={"role": "Programmer", "result": "initial"},
+        steps=[
+            Step(
+                id="step_check",
+                name="Check Role",
+                action="logic.if",
+                parameters={
+                    "left": "${role}",
+                    "operator": "equals",
+                    "right": "Programmer"
+                },
+                sub_steps=[
+                    Step(
+                        id="sub_set",
+                        name="Set Success",
+                        action="logic.set_variable",
+                        parameters={"name": "result", "value": "is_programmer"},
+                        output_var="result"
+                    )
+                ]
+            )
+        ]
+    )
+
+    interpreter = FlowInterpreter()
+    ctx_true = interpreter.run_flow(flow_true)
+    assert ctx_true.get_variable("result") == "is_programmer"
+    assert ctx_true.step_results[0].status == "success"
+
+    # 2. False condition
+    flow_false = FlowDefinition(
+        name="Test If False",
+        variables={"role": "Manager", "result": "initial"},
+        steps=[
+            Step(
+                id="step_check",
+                name="Check Role",
+                action="logic.if",
+                parameters={
+                    "left": "${role}",
+                    "operator": "equals",
+                    "right": "Programmer"
+                },
+                sub_steps=[
+                    Step(
+                        id="sub_set",
+                        name="Set Success",
+                        action="logic.set_variable",
+                        parameters={"name": "result", "value": "is_programmer"},
+                        output_var="result"
+                    )
+                ]
+            )
+        ]
+    )
+
+    ctx_false = interpreter.run_flow(flow_false)
+    assert ctx_false.get_variable("result") == "initial"
+    assert ctx_false.step_results[0].status == "skipped"
+
+
+def test_step_condition():
+    flow = FlowDefinition(
+        name="Test Step Condition",
+        variables={"role": "Manager", "result": "initial"},
+        steps=[
+            Step(
+                id="step_skip",
+                name="Skip If Not Programmer",
+                action="logic.set_variable",
+                condition="${role} == Programmer",
+                parameters={"name": "result", "value": "modified"},
+                output_var="result"
+            )
+        ]
+    )
+
+    interpreter = FlowInterpreter()
+    ctx = interpreter.run_flow(flow)
+    assert ctx.get_variable("result") == "initial"
+    assert ctx.step_results[0].status == "skipped"
+
+
+def test_logic_if_else_and_append():
+    flow = FlowDefinition(
+        name="Test If Else and Append",
+        variables={"role": "Analyst", "name": "John", "skipped": []},
+        steps=[
+            Step(
+                id="step_check",
+                name="Check Role",
+                action="logic.if",
+                parameters={
+                    "left": "${role}",
+                    "operator": "equals",
+                    "right": "Programmer"
+                },
+                sub_steps=[
+                    Step(
+                        id="sub_pos",
+                        name="Set Processed",
+                        action="logic.set_variable",
+                        parameters={"name": "status", "value": "processed"}
+                    )
+                ],
+                else_steps=[
+                    Step(
+                        id="sub_else_append",
+                        name="Record Non-Programmer",
+                        action="logic.append",
+                        parameters={
+                            "target": "skipped",
+                            "item": {
+                                "First Name": "${name}",
+                                "Role": "${role}"
+                            }
+                        }
+                    )
+                ]
+            )
+        ]
+    )
+
+    interpreter = FlowInterpreter()
+    ctx = interpreter.run_flow(flow)
+
+    assert ctx.is_completed is True
+    assert ctx.has_error is False
+    assert ctx.get_variable("status") is None
+    skipped = ctx.get_variable("skipped")
+    assert isinstance(skipped, list)
+    assert len(skipped) == 1
+    assert skipped[0] == {"First Name": "John", "Role": "Analyst"}
+    check_result = next(r for r in ctx.step_results if r.step_id == "step_check")
+    assert check_result.status == "success"
+    assert check_result.output["branch_executed"] == "else"
+
+
+def test_flow_failure_diagnosis():
+    flow = FlowDefinition(
+        name="Test Failing Flow",
+        steps=[
+            Step(
+                id="step_fail_file",
+                name="Read Missing File",
+                action="excel.read",
+                parameters={"file_path": "non_existent_file.xlsx"}
+            )
+        ]
+    )
+
+    interpreter = FlowInterpreter()
+    ctx = interpreter.run_flow(flow)
+
+    assert ctx.is_completed is False
+    assert ctx.has_error is True
+    assert ctx.failure_details is not None
+    assert ctx.failure_details.failed_step_id == "step_fail_file"
+    assert ctx.failure_details.failed_step_name == "Read Missing File"
+    assert ctx.failure_details.action == "excel.read"
+    assert ctx.failure_details.exception_class == "FileNotFoundError"
+    assert "not found" in ctx.failure_details.root_cause.lower()
+    assert len(ctx.failure_details.suggested_fix) > 0
+
+
+
+

@@ -78,6 +78,7 @@ class ExecutionLogger:
         if self.log_dir:
             try:
                 raw_data = context.model_dump(mode="python")
+                raw_data = {"$schema": "../../../schemas/execution_log.schema.json", **raw_data}
 
                 # Filter out internal private runtime variables (e.g. __playwright_*)
                 if "variables" in raw_data and isinstance(raw_data["variables"], dict):

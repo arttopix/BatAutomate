@@ -1,4 +1,5 @@
 {
+  "$schema": "../../schemas/flow.schema.json",
   "name": "Sample BAT Automate Flow",
   "description": "Test flow executing variables, logic, delay, and HTTP API actions",
   "version": "1.0.0",

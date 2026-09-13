@@ -1,0 +1,265 @@
+{
+  "$defs": {
+    "ExecutionMetrics": {
+      "properties": {
+        "total_steps": {
+          "default": 0,
+          "description": "Total number of steps evaluated",
+          "title": "Total Steps",
+          "type": "integer"
+        },
+        "successful_steps": {
+          "default": 0,
+          "description": "Number of successfully executed steps",
+          "title": "Successful Steps",
+          "type": "integer"
+        },
+        "failed_steps": {
+          "default": 0,
+          "description": "Number of failed steps",
+          "title": "Failed Steps",
+          "type": "integer"
+        },
+        "skipped_steps": {
+          "default": 0,
+          "description": "Number of skipped steps",
+          "title": "Skipped Steps",
+          "type": "integer"
+        },
+        "total_duration_seconds": {
+          "default": 0.0,
+          "description": "Total flow run duration in seconds",
+          "title": "Total Duration Seconds",
+          "type": "number"
+        },
+        "hours_saved": {
+          "default": 0.0,
+          "description": "Estimated manual labour hours saved",
+          "title": "Hours Saved",
+          "type": "number"
+        },
+        "cost_saved": {
+          "default": 0.0,
+          "description": "Estimated operational cost saved",
+          "title": "Cost Saved",
+          "type": "number"
+        }
+      },
+      "title": "ExecutionMetrics",
+      "type": "object"
+    },
+    "FailureDetails": {
+      "properties": {
+        "failed_step_id": {
+          "description": "ID of the step that triggered the failure",
+          "title": "Failed Step Id",
+          "type": "string"
+        },
+        "failed_step_name": {
+          "description": "Human-readable name of the failed step",
+          "title": "Failed Step Name",
+          "type": "string"
+        },
+        "action": {
+          "description": "Action that failed (e.g. web.click, excel.read)",
+          "title": "Action",
+          "type": "string"
+        },
+        "error_type": {
+          "default": "Technical",
+          "description": "Classification: Technical or Business exception",
+          "title": "Error Type",
+          "type": "string"
+        },
+        "exception_class": {
+          "description": "Python exception class name (e.g. FileNotFoundError, TimeoutError)",
+          "title": "Exception Class",
+          "type": "string"
+        },
+        "error_message": {
+          "description": "Original error message",
+          "title": "Error Message",
+          "type": "string"
+        },
+        "root_cause": {
+          "description": "Direct summary of the root cause for AI and human diagnosis",
+          "title": "Root Cause",
+          "type": "string"
+        },
+        "suggested_fix": {
+          "description": "Actionable recommendation to resolve the failure",
+          "title": "Suggested Fix",
+          "type": "string"
+        }
+      },
+      "required": [
+        "failed_step_id",
+        "failed_step_name",
+        "action",
+        "exception_class",
+        "error_message",
+        "root_cause",
+        "suggested_fix"
+      ],
+      "title": "FailureDetails",
+      "type": "object"
+    },
+    "StepResult": {
+      "properties": {
+        "step_id": {
+          "description": "Unique step identifier",
+          "title": "Step Id",
+          "type": "string"
+        },
+        "step_name": {
+          "description": "Step name",
+          "title": "Step Name",
+          "type": "string"
+        },
+        "action": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Action executed by this step",
+          "title": "Action"
+        },
+        "status": {
+          "description": "Execution status: success, failed, skipped",
+          "title": "Status",
+          "type": "string"
+        },
+        "start_time": {
+          "description": "Timestamp when step started",
+          "format": "date-time",
+          "title": "Start Time",
+          "type": "string"
+        },
+        "end_time": {
+          "description": "Timestamp when step finished",
+          "format": "date-time",
+          "title": "End Time",
+          "type": "string"
+        },
+        "duration_seconds": {
+          "description": "Execution duration in seconds",
+          "title": "Duration Seconds",
+          "type": "number"
+        },
+        "output": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Output payload returned by the action",
+          "title": "Output"
+        },
+        "error_message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Error message if step failed",
+          "title": "Error Message"
+        },
+        "error_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Error classification: Technical or Business",
+          "title": "Error Type"
+        }
+      },
+      "required": [
+        "step_id",
+        "step_name",
+        "status",
+        "start_time",
+        "end_time",
+        "duration_seconds"
+      ],
+      "title": "StepResult",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "flow_name": {
+      "description": "Name of the executed workflow",
+      "title": "Flow Name",
+      "type": "string"
+    },
+    "start_time": {
+      "description": "Workflow start timestamp",
+      "format": "date-time",
+      "title": "Start Time",
+      "type": "string"
+    },
+    "variables": {
+      "additionalProperties": true,
+      "description": "In-memory variables captured during execution",
+      "title": "Variables",
+      "type": "object"
+    },
+    "step_results": {
+      "description": "Detailed per-step execution log",
+      "items": {
+        "$ref": "#/$defs/StepResult"
+      },
+      "title": "Step Results",
+      "type": "array"
+    },
+    "metrics": {
+      "$ref": "#/$defs/ExecutionMetrics",
+      "description": "Aggregated run metrics and telemetry"
+    },
+    "is_completed": {
+      "default": false,
+      "description": "Whether the workflow completed all steps successfully",
+      "title": "Is Completed",
+      "type": "boolean"
+    },
+    "has_error": {
+      "default": false,
+      "description": "Whether an unhandled error occurred during execution",
+      "title": "Has Error",
+      "type": "boolean"
+    },
+    "failure_details": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FailureDetails"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Structured root-cause diagnosis if has_error is true"
+    }
+  },
+  "required": [
+    "flow_name"
+  ],
+  "title": "BAT Automate Execution Log Schema",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

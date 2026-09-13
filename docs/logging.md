@@ -32,31 +32,49 @@ Each execution log contains comprehensive runtime and business data:
 
 ```json
 {
+  "$schema": "../../../schemas/execution_log.schema.json",
   "flow_name": "RPA Challenge Solver",
   "start_time": "2026-09-11T21:39:34.000",
   "end_time": "2026-09-11T21:39:42.869",
-  "is_completed": true,
-  "has_error": false,
+  "is_completed": false,
+  "has_error": true,
+  "failure_details": {
+    "failed_step_id": "step_2",
+    "failed_step_name": "Read Challenge Excel File",
+    "action": "excel.read",
+    "error_type": "Technical",
+    "exception_class": "FileNotFoundError",
+    "error_message": "Excel file not found: ./assets/challenge.xlsx",
+    "root_cause": "Required file was not found during execution of step 'Read Challenge Excel File'.",
+    "suggested_fix": "Verify the target file path exists and that relative paths are correctly anchored to the flow project directory."
+  },
   "metrics": {
-    "total_steps": 87,
-    "successful_steps": 87,
-    "failed_steps": 0,
+    "total_steps": 2,
+    "successful_steps": 1,
+    "failed_steps": 1,
     "skipped_steps": 0,
-    "total_duration_seconds": 4.48,
-    "hours_saved": 0.15
+    "total_duration_seconds": 1.25,
+    "hours_saved": 0.0
   },
   "variables": {
-    "target_url": "https://rpachallenge.com/",
-    "excel_path": "./assets/challenge.xlsx",
-    "screenshot_path": "./assets/result_rpachallenge.png"
+    "target_url": "https://rpachallenge.com/"
   },
   "step_results": [
     {
       "step_id": "step_1",
       "step_name": "Open RPA Challenge Webpage",
+      "action": "web.open",
       "status": "success",
-      "duration_seconds": 0.45,
-      "output": null
+      "duration_seconds": 0.45
+    },
+    {
+      "step_id": "step_2",
+      "step_name": "Read Challenge Excel File",
+      "action": "excel.read",
+      "status": "failed",
+      "duration_seconds": 0.05,
+      "error_message": "Excel file not found: ./assets/challenge.xlsx",
+      "error_type": "Technical"
     }
   ]
 }
