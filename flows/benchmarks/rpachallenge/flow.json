@@ -1,11 +1,13 @@
 {
+  "$schema": "../../../schemas/flow.schema.json",
   "name": "RPA Challenge Solver",
   "description": "Self-Contained Project Bundle: Automate filling RPA Challenge form (10 rounds, 70 fields) from local bundle assets",
   "version": "1.0.0",
   "variables": {
     "target_url": "https://rpachallenge.com/",
     "excel_path": "./assets/challenge.xlsx",
-    "screenshot_path": "./assets/result_rpachallenge.png"
+    "screenshot_path": "./assets/result_rpachallenge.png",
+    "non_programmers": []
   },
   "steps": [
     {
@@ -37,7 +39,7 @@
     },
     {
       "id": "step_4",
-      "name": "Loop Through 10 Rows and Fill Form",
+      "name": "Loop Through 10 Rows and Process Roles",
       "action": "logic.loop",
       "parameters": {
         "items": "${challenge_data}",
@@ -45,89 +47,106 @@
       },
       "sub_steps": [
         {
-          "id": "sub_4_1",
-          "name": "Fill First Name",
-          "action": "web.type",
+          "id": "sub_check_programmer",
+          "name": "Check If Role in Company is Programmer",
+          "action": "logic.if",
           "parameters": {
-            "label": "First Name",
-            "text": "${row.First Name}"
-          }
-        },
-        {
-          "id": "sub_4_2",
-          "name": "Fill Last Name",
-          "action": "web.type",
-          "parameters": {
-            "label": "Last Name",
-            "text": "${row.Last Name}"
-          }
-        },
-        {
-          "id": "sub_4_3",
-          "name": "Fill Company Name",
-          "action": "web.type",
-          "parameters": {
-            "label": "Company Name",
-            "text": "${row.Company Name}"
-          }
-        },
-        {
-          "id": "sub_4_4",
-          "name": "Fill Role in Company",
-          "action": "web.type",
-          "parameters": {
-            "label": "Role in Company",
-            "text": "${row.Role in Company}"
-          }
-        },
-        {
-          "id": "sub_4_5",
-          "name": "Fill Address",
-          "action": "web.type",
-          "parameters": {
-            "label": "Address",
-            "text": "${row.Address}"
-          }
-        },
-        {
-          "id": "sub_4_6",
-          "name": "Fill Email",
-          "action": "web.type",
-          "parameters": {
-            "label": "Email",
-            "text": "${row.Email}"
-          }
-        },
-        {
-          "id": "sub_4_7",
-          "name": "Fill Phone Number",
-          "action": "web.type",
-          "parameters": {
-            "label": "Phone Number",
-            "text": "${row.Phone Number}"
-          }
-        },
-        {
-          "id": "sub_4_8",
-          "name": "Submit Form Round",
-          "action": "web.click",
-          "parameters": {
-            "selector": "//input[@value='Submit']"
-          }
+            "left": "${row.Role in Company}",
+            "operator": "equals",
+            "right": "Programmer"
+          },
+          "sub_steps": [
+            {
+              "id": "sub_4_1",
+              "name": "Fill First Name",
+              "action": "web.type",
+              "parameters": {
+                "label": "First Name",
+                "text": "${row.First Name}"
+              }
+            },
+            {
+              "id": "sub_4_2",
+              "name": "Fill Last Name",
+              "action": "web.type",
+              "parameters": {
+                "label": "Last Name",
+                "text": "${row.Last Name}"
+              }
+            },
+            {
+              "id": "sub_4_3",
+              "name": "Fill Company Name",
+              "action": "web.type",
+              "parameters": {
+                "label": "Company Name",
+                "text": "${row.Company Name}"
+              }
+            },
+            {
+              "id": "sub_4_4",
+              "name": "Fill Role in Company",
+              "action": "web.type",
+              "parameters": {
+                "label": "Role in Company",
+                "text": "${row.Role in Company}"
+              }
+            },
+            {
+              "id": "sub_4_5",
+              "name": "Fill Address",
+              "action": "web.type",
+              "parameters": {
+                "label": "Address",
+                "text": "${row.Address}"
+              }
+            },
+            {
+              "id": "sub_4_6",
+              "name": "Fill Email",
+              "action": "web.type",
+              "parameters": {
+                "label": "Email",
+                "text": "${row.Email}"
+              }
+            },
+            {
+              "id": "sub_4_7",
+              "name": "Fill Phone Number",
+              "action": "web.type",
+              "parameters": {
+                "label": "Phone Number",
+                "text": "${row.Phone Number}"
+              }
+            },
+            {
+              "id": "sub_4_8",
+              "name": "Submit Form Round",
+              "action": "web.click",
+              "parameters": {
+                "selector": "//input[@value='Submit']"
+              }
+            }
+          ],
+          "else_steps": [
+            {
+              "id": "sub_4_else_collect",
+              "name": "Collect Non-Programmer into DataTable",
+              "action": "logic.append",
+              "parameters": {
+                "target": "non_programmers",
+                "item": {
+                  "First Name": "${row.First Name}",
+                  "Role in Company": "${row.Role in Company}"
+                }
+              }
+            }
+          ]
         }
       ]
     },
     {
       "id": "step_5",
-      "name": "Read Congratulations Score Message",
-      "action": "web.get_text",
-      "parameters": {
-        "selector": "//div[contains(@class, 'congratulations') or contains(@class, 'message2')]"
-      },
-      "output_var": "score_result"
-    },
-    {
-      "id": "step_6",
       "name": "Take Screenshot of Result",
       "action": "web.screenshot",
       "parameters": {
@@ -135,10 +154,29 @@
       }
     },
     {
-      "id": "step_7",
+      "id": "step_6",
       "name": "Close Browser",
       "action": "web.close",
       "parameters": {}
+    },
+    {
+      "id": "step_7",
+      "name": "Send Email Notification via Gmail",
+      "action": "flow.call",
+      "condition": "${config.send_notification} == true",
+      "parameters": {
+        "flow": "@shared/send_email.json",
+        "inputs": {
+          "to": "${config.email_to}",
+          "subject": "${config.email_subject}",
+          "body": "Hello,\n\nThe RPA Challenge benchmark automation has completed successfully.\nNon-programmers collected: ${non_programmers}\n\nPlease find attached the result screenshot.",
+          "attachments": [
+            "${screenshot_path}"
+          ],
+          "dry_run": "${config.dry_run}"
+        }
+      },
+      "output_var": "email_notification_result"
     }
   ]
 }

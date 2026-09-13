@@ -2,6 +2,14 @@ https://buymeacoffee.com/arttopix
 
 # BAT Automate
 
+[![Status](https://img.shields.io/badge/Status-Active%20Development%20(WIP)-orange.svg?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/Version-v0.1.0--alpha-blue.svg?style=flat-square)](#)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-brightgreen.svg?style=flat-square)](#)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
+
+> ⚠️ **Project Status: Active Development (Pre-Alpha / Work-in-Progress)**  
+> **BAT Automate** is currently under rapid, active development. Core engine APIs, subflow execution specifications, and action schemas are evolving. It is not yet intended for mission-critical production deployments. Community feedback and contributions are warmly welcome!
+
 > **Open-Source, Local AI-Native Agentic Automation Framework**  
 > Next-generation Enterprise RPA powered by Python and on-device SLMs. Eliminate soaring commercial licensing costs with autonomous agent workflows, zero-license Excel automation, and 100% free unattended robots.
 
@@ -61,13 +69,13 @@ BatAutomate/
 
 ## Development Roadmap
 
-- [ ] **Phase 1: Foundation & Core Engine (`bat-core`)**
+- [x] **Phase 1: Foundation & Core Engine (`bat-core`)**
   - [x] Flow JSON Schema and Pydantic v2 data models
   - [x] Flow Interpreter, execution context manager, and dynamic variable evaluator (`${var}`)
-  - [x] Standard Action libraries: Web (Playwright sync), Excel (`openpyxl`), Logic, HTTP API
+  - [x] Standard Action libraries: Web (Playwright sync), Excel (`openpyxl`), Logic (If/Loop/Append), HTTP API, Email (`email.send`)
   - [x] Hierarchical Structured Logging (`logs/<flow>/<date>/<time>.json`)
   - [x] Global CLI & Smart Flow Resolver (`batautomate list`, `batautomate run <flow_name>`)
-  - [ ] Modular Flow Project Architecture & Subflow Engine (`flow.call`, `@shared/` namespace, project bundles)
+  - [x] Modular Flow Project Architecture & Subflow Engine (`flow.call`, `flow.return`, `@shared/` namespace, auto-load `config.json`)
 - [ ] **Phase 2: Visual Designer & Selector (`bat-studio`)**
   - Interactive drag-and-drop workflow canvas with React Flow inside Tauri shell
   - Web and desktop UI element inspectors for auto-generating reliable selectors
