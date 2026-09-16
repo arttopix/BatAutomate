@@ -28,10 +28,49 @@ class FlowInterpreter:
         self.max_depth = max_depth
         self.call_stack: List[str] = call_stack or []
 
-    def _diagnose_failure(self, step: Step, exc: Exception) -> FailureDetails:
+    def _try_capture_failure_screenshot(self, step: Step, context: ExecutionContext) -> Optional[str]:
+        try:
+            page = context.get_variable("__playwright_page__")
+            if page and hasattr(page, "screenshot"):
+                is_closed = getattr(page, "is_closed", lambda: False)
+                if callable(is_closed) and is_closed():
+                    return None
+
+                config_data = context.get_variable("config") or {}
+                error_dir_str = config_data.get("error_dir") or config_data.get("error_screenshot_dir")
+
+                flow_dir_str = context.get_variable("__flow_dir__")
+                base_dir = Path(flow_dir_str) if flow_dir_str else Path.cwd()
+
+                if error_dir_str:
+                    err_dir = Path(error_dir_str)
+                    if not err_dir.is_absolute():
+                        err_dir = (base_dir / error_dir_str).resolve()
+                else:
+                    err_dir = (base_dir / "output" / "errors").resolve()
+
+                err_dir.mkdir(parents=True, exist_ok=True)
+                timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+                clean_step_id = "".join(c if c.isalnum() or c in ("-", "_") else "_" for c in step.id)
+                shot_path = err_dir / f"error_{clean_step_id}_{timestamp_str}.png"
+
+                page.screenshot(path=str(shot_path), full_page=True)
+                shot_path_str = str(shot_path.resolve())
+                context.set_variable("__last_error_screenshot__", shot_path_str)
+                self.logger.logger.warning(f"Auto-captured failure screenshot: {shot_path_str}")
+                return shot_path_str
+        except Exception as snap_err:
+            self.logger.logger.debug(f"Failed to auto-capture failure screenshot: {str(snap_err)}")
+        return None
+
+    def _diagnose_failure(self, step: Step, exc: Exception, context: Optional[ExecutionContext] = None) -> FailureDetails:
         exc_class = type(exc).__name__
         err_msg = str(exc)
         error_type = "Business" if "Business" in exc_class else "Technical"
+
+        error_screenshot_path = None
+        if context:
+            error_screenshot_path = self._try_capture_failure_screenshot(step, context)
 
         if isinstance(exc, SubflowExecutionError):
             root_cause = f"Subflow execution failed in '{exc.subflow_name}': {err_msg}"
@@ -60,25 +99,29 @@ class FlowInterpreter:
             exception_class=exc_class,
             error_message=err_msg,
             root_cause=root_cause,
-            suggested_fix=suggested_fix
+            suggested_fix=suggested_fix,
+            error_screenshot_path=error_screenshot_path
         )
 
     def run_flow(self, flow_def: FlowDefinition, initial_vars: Optional[Dict[str, Any]] = None) -> ExecutionContext:
         context = ExecutionContext(flow_name=flow_def.name)
 
-        if initial_vars:
-            for k, v in initial_vars.items():
-                context.set_variable(k, v)
-
-        # Auto-load project configuration (config.json & .env) from flow bundle directory
-        flow_dir_str = context.get_variable("__flow_dir__")
-        if flow_dir_str:
-            self._load_bundle_configs(Path(flow_dir_str), context)
-
+        # 1. Flow definition default variables (base priority)
         if flow_def.variables:
             for k, v in flow_def.variables.items():
                 context.set_variable(k, v)
 
+        # 2. Set initial caller variables (e.g. __flow_dir__)
+        if initial_vars:
+            for k, v in initial_vars.items():
+                context.set_variable(k, v)
+
+        # 3. Auto-load project configuration (config.json & .env) from flow bundle directory
+        flow_dir_str = context.get_variable("__flow_dir__")
+        if flow_dir_str:
+            self._load_bundle_configs(Path(flow_dir_str), context)
+
+        # 4. Caller explicit initial_vars take highest priority
         if initial_vars:
             for k, v in initial_vars.items():
                 context.set_variable(k, v)
@@ -159,7 +202,7 @@ class FlowInterpreter:
             except Exception as e:
                 end_time = datetime.now()
                 duration = (end_time - start_time).total_seconds()
-                failure_diag = self._diagnose_failure(step, e)
+                failure_diag = self._diagnose_failure(step, e, context)
 
                 result = StepResult(
                     step_id=step.id,
@@ -214,7 +257,7 @@ class FlowInterpreter:
         except Exception as e:
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
-            failure_diag = self._diagnose_failure(step, e)
+            failure_diag = self._diagnose_failure(step, e, context)
 
             result = StepResult(
                 step_id=step.id,
@@ -328,26 +371,59 @@ class FlowInterpreter:
         context.step_results.append(result)
         self.logger.log_step_result(result)
 
+    def _apply_config_data(self, config_data: Dict[str, Any], context: ExecutionContext) -> Dict[str, Any]:
+        # 1. Align website <-> target_url synonyms
+        if "website" in config_data and "target_url" not in config_data:
+            config_data["target_url"] = config_data["website"]
+        elif "target_url" in config_data and "website" not in config_data:
+            config_data["website"] = config_data["target_url"]
+
+        # 2. Synchronize credentials if present in config
+        if "smtp_user" in config_data and config_data["smtp_user"]:
+            os.environ.setdefault("GMAIL_USER", str(config_data["smtp_user"]))
+            os.environ.setdefault("SMTP_USER", str(config_data["smtp_user"]))
+        if "smtp_password" in config_data and config_data["smtp_password"]:
+            os.environ.setdefault("GMAIL_APP_PASSWORD", str(config_data["smtp_password"]))
+            os.environ.setdefault("SMTP_PASSWORD", str(config_data["smtp_password"]))
+
+        # 3. Merge with existing config (e.g. from flow definition default variables)
+        existing_config = context.get_variable("config")
+        if isinstance(existing_config, dict):
+            merged_config = {**existing_config, **config_data}
+        else:
+            merged_config = config_data
+
+        context.set_variable("config", merged_config)
+        for k, v in merged_config.items():
+            context.set_variable(k, v)
+        return merged_config
+
     def _load_bundle_configs(self, flow_dir: Path, context: ExecutionContext) -> None:
         if not flow_dir.is_dir():
             return
 
-        # 1. Primary Check: config.json (with warning & template fallback like standard RPA)
-        config_file = flow_dir / "config.json"
-        template_file = flow_dir / "config.template.json"
+        # 1. Primary Check: config/config.json then config.json
+        config_candidates = [
+            flow_dir / "config" / "config.json",
+            flow_dir / "config.json"
+        ]
+        config_file = next((p for p in config_candidates if p.is_file()), None)
 
-        if config_file.is_file():
+        template_candidates = [
+            flow_dir / "config" / "config.template.json",
+            flow_dir / "config.template.json"
+        ]
+        template_file = next((p for p in template_candidates if p.is_file()), None)
+
+        if config_file:
             try:
                 config_data = json.loads(config_file.read_text(encoding="utf-8"))
                 if isinstance(config_data, dict):
-                    context.set_variable("config", config_data)
-                    for k, v in config_data.items():
-                        if k not in context.variables:
-                            context.set_variable(k, v)
-                    self.logger.logger.info(f"Loaded project configuration from {config_file.name} ({len(config_data)} keys)")
+                    applied = self._apply_config_data(config_data, context)
+                    self.logger.logger.info(f"Loaded project configuration from {config_file.name} ({len(applied)} keys)")
             except Exception as e:
                 self.logger.logger.warning(f"Failed to load config from {config_file}: {str(e)}")
-        elif template_file.is_file():
+        elif template_file:
             self.logger.logger.warning(
                 f"Configuration file 'config.json' was not found in '{flow_dir.name}'. "
                 f"Falling back to default '{template_file.name}'. "
@@ -356,10 +432,7 @@ class FlowInterpreter:
             try:
                 config_data = json.loads(template_file.read_text(encoding="utf-8"))
                 if isinstance(config_data, dict):
-                    context.set_variable("config", config_data)
-                    for k, v in config_data.items():
-                        if k not in context.variables:
-                            context.set_variable(k, v)
+                    applied = self._apply_config_data(config_data, context)
             except Exception as e:
                 self.logger.logger.warning(f"Failed to load template config from {template_file}: {str(e)}")
         else:

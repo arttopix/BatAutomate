@@ -4,9 +4,6 @@
   "description": "Self-Contained Project Bundle: Automate filling RPA Challenge form (10 rounds, 70 fields) from local bundle assets",
   "version": "1.0.0",
   "variables": {
-    "target_url": "https://rpachallenge.com/",
-    "excel_path": "./assets/challenge.xlsx",
-    "screenshot_path": "./assets/result_rpachallenge.png",
     "non_programmers": []
   },
   "steps": [
@@ -15,7 +12,7 @@
       "name": "Open RPA Challenge Webpage",
       "action": "web.open",
       "parameters": {
-        "url": "${target_url}",
+        "url": "${config.website}",
         "headless": true
       }
     },
@@ -24,7 +21,7 @@
       "name": "Read Challenge Excel File",
       "action": "excel.read",
       "parameters": {
-        "file_path": "${excel_path}",
+        "file_path": "${config.excel_path}",
         "clean_headers": true
       },
       "output_var": "challenge_data"
@@ -150,7 +147,7 @@
       "name": "Take Screenshot of Result",
       "action": "web.screenshot",
       "parameters": {
-        "path": "${screenshot_path}"
+        "path": "${config.screenshot_path}"
       }
     },
     {
@@ -171,7 +168,7 @@
           "subject": "${config.email_subject}",
           "body": "Hello,\n\nThe RPA Challenge benchmark automation has completed successfully.\nNon-programmers collected: ${non_programmers}\n\nPlease find attached the result screenshot.",
           "attachments": [
-            "${screenshot_path}"
+            "${config.screenshot_path}"
           ],
           "dry_run": "${config.dry_run}"
         }

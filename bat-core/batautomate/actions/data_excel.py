@@ -58,3 +58,39 @@ class ExcelWriteAction(BaseAction):
 
         df.to_excel(file_path, sheet_name=sheet_name, index=False)
         return {"rows_written": len(df), "file_path": file_path}
+
+
+@register_action("csv.write")
+class CsvWriteAction(BaseAction):
+    def execute(self, parameters: Dict[str, Any], context: ExecutionContext) -> Any:
+        file_path = parameters.get("file_path")
+        data = parameters.get("data", [])
+        columns = parameters.get("columns")
+
+        if not file_path:
+            raise ValueError("Parameter 'file_path' is required for action 'csv.write'.")
+
+        target_path = Path(file_path)
+        if not target_path.is_absolute():
+            flow_dir_str = context.get_variable("__flow_dir__")
+            if flow_dir_str:
+                target_path = Path(flow_dir_str) / file_path
+
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if isinstance(data, list):
+            df = pd.DataFrame(data)
+        elif isinstance(data, dict):
+            df = pd.DataFrame([data])
+        else:
+            raise ValueError("Data for csv.write must be a list of dicts or a dict.")
+
+        if columns and isinstance(columns, list):
+            for col in columns:
+                if col not in df.columns:
+                    df[col] = ""
+            df = df[columns]
+
+        df.to_csv(target_path, index=False)
+        return {"rows_written": len(df), "file_path": str(target_path)}
+

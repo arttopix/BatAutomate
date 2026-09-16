@@ -667,5 +667,122 @@ def test_auto_load_flow_config_template_fallback(tmp_path):
     assert ctx.get_variable("ep") == "https://api.template.example.com"
 
 
+def test_auto_load_flow_config_from_config_subfolder(tmp_path):
+    bundle_dir = tmp_path / "subfolder_config_bundle"
+    bundle_dir.mkdir()
+    config_dir = bundle_dir / "config"
+    config_dir.mkdir()
+
+    config_data = {
+        "website": "https://rpachallenge.com/",
+        "excel_path": "./assets/challenge.xlsx",
+        "screenshot_path": "./output/screenshots/res.png",
+        "error_dir": "./output/errors/"
+    }
+    (config_dir / "config.json").write_text(json.dumps(config_data), encoding="utf-8")
+
+    flow_def = FlowDefinition(
+        name="Subfolder Config Flow",
+        steps=[
+            Step(
+                id="s1",
+                name="Inspect Website",
+                action="logic.set_variable",
+                parameters={"name": "site", "value": "${config.website}"},
+                output_var="site"
+            ),
+            Step(
+                id="s2",
+                name="Inspect Error Dir",
+                action="logic.set_variable",
+                parameters={"name": "err_dir", "value": "${config.error_dir}"},
+                output_var="err_dir"
+            )
+        ]
+    )
+
+    interpreter = FlowInterpreter()
+    ctx = interpreter.run_flow(flow_def, initial_vars={"__flow_dir__": str(bundle_dir)})
+
+    assert ctx.is_completed is True
+    assert ctx.has_error is False
+    assert ctx.get_variable("site") == "https://rpachallenge.com/"
+    assert ctx.get_variable("err_dir") == "./output/errors/"
+
+
+def test_auto_capture_error_screenshot_on_failure(tmp_path):
+    bundle_dir = tmp_path / "error_capture_bundle"
+    bundle_dir.mkdir()
+
+    # Mock Playwright Page
+    class MockPlaywrightPage:
+        def __init__(self):
+            self.captured_path = None
+            self.is_closed_flag = False
+
+        def is_closed(self):
+            return self.is_closed_flag
+
+        def screenshot(self, path, full_page=True):
+            self.captured_path = path
+            Path(path).write_text("fake_screenshot_bytes", encoding="utf-8")
+
+    mock_page = MockPlaywrightPage()
+
+    flow_def = FlowDefinition(
+        name="Failure Flow",
+        steps=[
+            Step(
+                id="failing_step",
+                name="Step That Fails",
+                action="excel.read",
+                parameters={"file_path": str(bundle_dir / "missing.xlsx")}
+            )
+        ]
+    )
+
+    interpreter = FlowInterpreter()
+    ctx = interpreter.run_flow(
+        flow_def,
+        initial_vars={
+            "__flow_dir__": str(bundle_dir),
+            "__playwright_page__": mock_page
+        }
+    )
+
+    assert ctx.has_error is True
+    assert ctx.failure_details is not None
+    assert ctx.failure_details.error_screenshot_path is not None
+    assert Path(ctx.failure_details.error_screenshot_path).is_file()
+    assert ctx.get_variable("__last_error_screenshot__") == ctx.failure_details.error_screenshot_path
+    assert "failing_step" in ctx.failure_details.error_screenshot_path
+
+
+def test_auto_capture_error_screenshot_no_browser_graceful(tmp_path):
+    bundle_dir = tmp_path / "no_browser_bundle"
+    bundle_dir.mkdir()
+
+    flow_def = FlowDefinition(
+        name="Failure Without Browser",
+        steps=[
+            Step(
+                id="fail_no_web",
+                name="Step That Fails Without Web",
+                action="excel.read",
+                parameters={"file_path": str(bundle_dir / "missing.xlsx")}
+            )
+        ]
+    )
+
+    interpreter = FlowInterpreter()
+    # No __playwright_page__ provided
+    ctx = interpreter.run_flow(flow_def, initial_vars={"__flow_dir__": str(bundle_dir)})
+
+    assert ctx.has_error is True
+    assert ctx.failure_details is not None
+    assert ctx.failure_details.error_screenshot_path is None
+
+
+
 
 

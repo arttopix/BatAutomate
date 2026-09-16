@@ -135,6 +135,52 @@ class WebScreenshotAction(BaseAction):
         return {"screenshot_path": str(target_path)}
 
 
+@register_action("web.download")
+class WebDownloadAction(BaseAction):
+    def execute(self, parameters: Dict[str, Any], context: ExecutionContext) -> Any:
+        page = _get_page(context)
+        selector = parameters.get("selector")
+        target_path_str = parameters.get("target_path", "downloads/downloaded_file")
+        timeout = float(parameters.get("timeout", 30000))
+
+        target_path = Path(target_path_str)
+        if not target_path.is_absolute():
+            flow_dir_str = context.get_variable("__flow_dir__")
+            if flow_dir_str:
+                target_path = Path(flow_dir_str) / target_path_str
+
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if not selector:
+            raise ValueError("Parameter 'selector' is required for action 'web.download'.")
+
+        locator = _resolve_locator(page, parameters).first
+
+        # Check if the element has an href attribute to download directly via browser session
+        href = locator.get_attribute("href")
+        if href:
+            # Resolve relative URL against current page URL
+            from urllib.parse import urljoin
+            full_url = urljoin(page.url, href)
+            response = page.context.request.get(full_url, timeout=timeout)
+            if response.status >= 400:
+                raise RuntimeError(f"Failed to download from '{full_url}', HTTP status {response.status}")
+            target_path.write_bytes(response.body())
+        else:
+            # If it's a button or trigger that initiates a browser download event
+            with page.expect_download(timeout=timeout) as download_info:
+                locator.click()
+            download = download_info.value
+            download.save_as(str(target_path))
+
+        file_size = target_path.stat().st_size
+        return {
+            "status": "downloaded",
+            "file_path": str(target_path),
+            "file_size": file_size
+        }
+
+
 @register_action("web.close")
 class WebCloseAction(BaseAction):
     def execute(self, parameters: Dict[str, Any], context: ExecutionContext) -> Any:
@@ -158,3 +204,4 @@ class WebCloseAction(BaseAction):
             context.set_variable("__playwright_pw__", None)
 
         return {"status": "closed"}
+

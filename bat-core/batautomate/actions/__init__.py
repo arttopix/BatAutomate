@@ -4,7 +4,7 @@ Actions registry and standard action implementations.
 
 from .base import BaseAction
 from .registry import ActionRegistry, register_action
-from . import logic, data_excel, web_playwright, http_api, flow_control, email_smtp
+from . import logic, data_excel, web_playwright, http_api, flow_control, email_smtp, ai_ollama
 
 __all__ = [
     "BaseAction",
@@ -16,4 +16,6 @@ __all__ = [
     "http_api",
     "flow_control",
     "email_smtp",
+    "ai_ollama",
 ]
+

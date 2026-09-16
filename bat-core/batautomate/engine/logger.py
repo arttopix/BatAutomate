@@ -1,5 +1,7 @@
 import json
 import logging
+import os
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Union
@@ -15,6 +17,9 @@ def resolve_log_dir(log_dir: Optional[Union[str, Path]] = None, flow_path: Optio
     """
     if log_dir and str(log_dir).strip() not in ["", "logs"]:
         return Path(log_dir).resolve()
+
+    if os.getenv("BAT_LOG_DIR"):
+        return Path(os.environ["BAT_LOG_DIR"]).resolve()
 
     # 1. Search upwards from Current Working Directory
     curr = Path.cwd().resolve()
@@ -48,9 +53,14 @@ class ExecutionLogger:
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
 
-        self.log_dir = resolve_log_dir(log_dir, flow_path=flow_path)
+        if not log_dir and "PYTEST_CURRENT_TEST" in os.environ:
+            self.log_dir = Path(tempfile.gettempdir()) / "batautomate_test_logs"
+        else:
+            self.log_dir = resolve_log_dir(log_dir, flow_path=flow_path)
+
         if self.log_dir:
             self.log_dir.mkdir(parents=True, exist_ok=True)
+
 
     def log_step_start(self, step_id: str, step_name: str, action: str) -> None:
         self.logger.info(f"Starting Step [{step_id}] '{step_name}' (Action: {action})")

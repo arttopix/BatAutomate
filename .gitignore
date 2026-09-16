@@ -25,3 +25,12 @@ logs/
 # Flow Project Bundle Configurations (Keep templates, ignore local configs)
 config.json
 !*.template.json
+!flows/benchmarks/**/config.json
+!flows/benchmarks/**/config/*.json
+
+# Runtime Outputs & Screenshots (Results, error images)
+**/output/**
+!**/output/**/.gitkeep
+
+
+

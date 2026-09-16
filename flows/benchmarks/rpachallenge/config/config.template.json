@@ -1,7 +1,8 @@
 {
-  "target_url": "https://rpachallenge.com/",
+  "website": "https://rpachallenge.com/",
   "excel_path": "./assets/challenge.xlsx",
-  "screenshot_path": "./assets/result_rpachallenge.png",
+  "screenshot_path": "./output/screenshots/result_rpachallenge.png",
+  "error_dir": "./output/errors/",
   "email_to": "recipient@example.com",
   "email_subject": "[BAT Automate] RPA Challenge Benchmark Completed",
   "send_notification": false,

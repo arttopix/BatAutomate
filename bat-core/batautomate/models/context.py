@@ -35,6 +35,7 @@ class FailureDetails(BaseModel):
     error_message: str = Field(..., description="Original error message")
     root_cause: str = Field(..., description="Direct summary of the root cause for AI and human diagnosis")
     suggested_fix: str = Field(..., description="Actionable recommendation to resolve the failure")
+    error_screenshot_path: Optional[str] = Field(default=None, description="Path to screenshot captured at moment of failure if browser was active")
 
 
 class ExecutionContext(BaseModel):
