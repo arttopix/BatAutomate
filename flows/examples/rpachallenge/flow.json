@@ -9,7 +9,7 @@
   "steps": [
     {
       "id": "step_1",
-      "name": "Open RPA Challenge Webpage (Modified via Studio)",
+      "name": "Open RPA Challenge Webpage #EDIT for check",
       "action": "web.open",
       "parameters": {
         "url": "${config.website}",

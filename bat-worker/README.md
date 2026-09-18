@@ -72,14 +72,14 @@ BAT Worker System Information:
   memory_used_percent: 17.6
 ```
 
-### C. Run RPA Challenge Benchmark
+### C. Run RPA Challenge Example Flow
 ```bash
-batworker run flows/benchmarks/rpachallenge/flow.json
+batworker run flows/examples/rpachallenge/flow.json
 ```
 
 To run inside an isolated sandbox directory:
 ```bash
-batworker run flows/benchmarks/rpachallenge/flow.json --sandbox
+batworker run flows/examples/rpachallenge/flow.json --sandbox
 ```
 
 ---

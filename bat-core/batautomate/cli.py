@@ -9,6 +9,11 @@ from . import __version__
 from .models.flow import FlowDefinition
 from .engine.interpreter import FlowInterpreter
 from .engine.logger import ExecutionLogger
+from .engine.markdown import (
+    load_flow,
+    compile_markdown_to_json,
+    export_json_to_markdown,
+)
 
 
 def _get_project_root() -> Optional[Path]:
@@ -43,48 +48,50 @@ def _get_search_directories() -> List[Path]:
 
 def discover_flows() -> Dict[str, Tuple[Path, str]]:
     """
-    Discovers available flow JSON files and Self-Contained Project Bundles across search directories.
+    Discovers available flow JSON and Markdown files across search directories.
     Returns dict mapping flow alias/name to (file_path, description).
     """
     discovered: Dict[str, Tuple[Path, str]] = {}
 
     for search_dir in _get_search_directories():
-        # 1. Discover Self-Contained Project Bundles (directories with flow.json)
-        for flow_file in search_dir.glob("**/flow.json"):
+        # 1. Discover Self-Contained Project Bundles (directories with flow.json or flow.md)
+        flow_candidates = list(search_dir.glob("**/flow.json")) + list(search_dir.glob("**/flow.md"))
+        for flow_file in flow_candidates:
             parts = flow_file.parts
             if any(p.startswith(".") or p in ["__pycache__", "subflows", "node_modules", ".venv", "venv"] for p in parts):
                 continue
+            alias = flow_file.parent.name
+            if alias in discovered and flow_file.suffix == ".md":
+                # Prefer existing flow.json if already registered
+                continue
             try:
-                data = json.loads(flow_file.read_text(encoding="utf-8"))
-                if isinstance(data, dict) and "steps" in data:
-                    name = data.get("name", flow_file.parent.name)
-                    alias = flow_file.parent.name
-                    discovered[alias] = (flow_file, name)
-                    # Also register namespaced alias relative to search_dir (e.g. benchmarks/rpachallenge)
-                    try:
-                        rel = flow_file.parent.relative_to(search_dir)
-                        rel_str = str(rel).replace("\\", "/")
-                        if rel_str and rel_str != alias:
-                            discovered[rel_str] = (flow_file, name)
-                    except ValueError:
-                        pass
+                flow_def = load_flow(flow_file)
+                name = flow_def.name or alias
+                discovered[alias] = (flow_file, name)
+
+                try:
+                    rel = flow_file.parent.relative_to(search_dir)
+                    rel_str = str(rel).replace("\\", "/")
+                    if rel_str and rel_str != alias and rel_str not in discovered:
+                        discovered[rel_str] = (flow_file, name)
+                except ValueError:
+                    pass
             except Exception:
                 continue
 
-        # 2. Discover flat flow files (*.json)
-        for json_file in search_dir.glob("*.json"):
-            if json_file.name == "flow.json":
+        # 2. Discover flat flow files (*.json and *.md)
+        for candidate_file in list(search_dir.glob("*.json")) + list(search_dir.glob("*.md")):
+            if candidate_file.name in ["flow.json", "flow.md", "package.json", "tsconfig.json"]:
                 continue
-            if json_file.name.endswith("_flow.json") or json_file.parent.name in ["examples", "flows"]:
+            if candidate_file.name.endswith("_flow.json") or candidate_file.name.endswith("_flow.md") or candidate_file.parent.name in ["examples", "flows"]:
                 try:
-                    data = json.loads(json_file.read_text(encoding="utf-8"))
-                    if isinstance(data, dict) and "steps" in data:
-                        name = data.get("name", json_file.stem)
-                        alias = json_file.stem
-                        if alias.endswith("_flow"):
-                            alias = alias[:-5]
-                        if alias not in discovered:
-                            discovered[alias] = (json_file, name)
+                    flow_def = load_flow(candidate_file)
+                    name = flow_def.name or candidate_file.stem
+                    alias = candidate_file.stem
+                    if alias.endswith("_flow"):
+                        alias = alias[:-5]
+                    if alias not in discovered:
+                        discovered[alias] = (candidate_file, name)
                 except Exception:
                     continue
     return discovered
@@ -93,22 +100,27 @@ def discover_flows() -> Dict[str, Tuple[Path, str]]:
 def resolve_flow_path(flow_input: str) -> Optional[Path]:
     """
     Smart Flow Resolver: resolves a flow name, alias, project directory, or path into an absolute file path.
+    Supports both flow.json and flow.md.
     """
-    # 1. Exact path or relative path to file
     direct_path = Path(flow_input)
+    # 1. Exact file path
     if direct_path.is_file():
         return direct_path.resolve()
 
-    # 2. Direct path to a project directory containing flow.json
-    if direct_path.is_dir() and (direct_path / "flow.json").is_file():
-        return (direct_path / "flow.json").resolve()
+    # 2. Directory with flow.json or flow.md
+    if direct_path.is_dir():
+        if (direct_path / "flow.json").is_file():
+            return (direct_path / "flow.json").resolve()
+        if (direct_path / "flow.md").is_file():
+            return (direct_path / "flow.md").resolve()
 
-    # 3. Direct path with .json
-    json_path = Path(f"{flow_input}.json")
-    if json_path.is_file():
-        return json_path.resolve()
+    # 3. Direct path with extension
+    for ext in [".json", ".md"]:
+        p = Path(f"{flow_input}{ext}")
+        if p.is_file():
+            return p.resolve()
 
-    # 4. Search in discovered flows (aliases & project bundles)
+    # 4. Search discovered flows
     flows = discover_flows()
     if flow_input in flows:
         return flows[flow_input][0].resolve()
@@ -120,18 +132,23 @@ def resolve_flow_path(flow_input: str) -> Optional[Path]:
     for search_dir in _get_search_directories():
         candidates = [
             search_dir / flow_input / "flow.json",
+            search_dir / flow_input / "flow.md",
             search_dir / flow_input,
             search_dir / f"{flow_input}.json",
+            search_dir / f"{flow_input}.md",
             search_dir / f"{flow_input}_flow.json",
+            search_dir / f"{flow_input}_flow.md",
         ]
         for c in candidates:
             if c.is_file():
                 return c.resolve()
-            if c.is_dir() and (c / "flow.json").is_file():
-                return (c / "flow.json").resolve()
+            if c.is_dir():
+                if (c / "flow.json").is_file():
+                    return (c / "flow.json").resolve()
+                if (c / "flow.md").is_file():
+                    return (c / "flow.md").resolve()
 
-        # Check recursive directory match (e.g. flows/**/<flow_input>/flow.json)
-        for matched in search_dir.glob(f"**/{flow_input}/flow.json"):
+        for matched in list(search_dir.glob(f"**/{flow_input}/flow.json")) + list(search_dir.glob(f"**/{flow_input}/flow.md")):
             if matched.is_file():
                 return matched.resolve()
 
@@ -145,9 +162,19 @@ def main():
 
     # Command: run
     run_parser = subparsers.add_parser("run", help="Run an RPA Flow by name or path (e.g. 'batautomate run rpachallenge')")
-    run_parser.add_argument("flow_file", help="Flow name or path to flow.json file")
+    run_parser.add_argument("flow_file", help="Flow name or path to flow.json / flow.md file")
     run_parser.add_argument("--vars", help="Optional JSON string of variables to override", default=None)
     run_parser.add_argument("--log-dir", help="Directory to save execution JSON logs (default: auto-detected project root 'logs/')", default=None)
+
+    # Command: compile
+    compile_parser = subparsers.add_parser("compile", help="Compile a flow.md specification file into flow.json")
+    compile_parser.add_argument("markdown_file", help="Path to flow.md file or project directory containing flow.md")
+    compile_parser.add_argument("-o", "--output", help="Optional output flow.json path", default=None)
+
+    # Command: export-md
+    export_parser = subparsers.add_parser("export-md", help="Export a flow.json file into human-readable flow.md")
+    export_parser.add_argument("json_file", help="Path to flow.json file or project directory containing flow.json")
+    export_parser.add_argument("-o", "--output", help="Optional output flow.md path", default=None)
 
     # Command: list
     subparsers.add_parser("list", help="List all discovered RPA Flows available to run")
@@ -175,6 +202,40 @@ def main():
         else:
             print("Installation failed. On Linux/Raspberry Pi, you may also need: sudo playwright install-deps chromium", file=sys.stderr)
         sys.exit(res.returncode)
+
+    elif args.command == "compile":
+        src = Path(args.markdown_file).resolve()
+        if src.is_dir() and (src / "flow.md").is_file():
+            src = src / "flow.md"
+        if not src.is_file():
+            print(f"Error: Markdown flow file not found at: {src}", file=sys.stderr)
+            sys.exit(1)
+        out = Path(args.output).resolve() if args.output else None
+        try:
+            target = compile_markdown_to_json(src, output_json_path=out)
+            print(f"Successfully compiled: {src}")
+            print(f"Output saved to:       {target}")
+            sys.exit(0)
+        except Exception as e:
+            print(f"Compilation error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    elif args.command == "export-md":
+        src = Path(args.json_file).resolve()
+        if src.is_dir() and (src / "flow.json").is_file():
+            src = src / "flow.json"
+        if not src.is_file():
+            print(f"Error: JSON flow file not found at: {src}", file=sys.stderr)
+            sys.exit(1)
+        out = Path(args.output).resolve() if args.output else None
+        try:
+            target = export_json_to_markdown(src, output_md_path=out)
+            print(f"Successfully exported: {src}")
+            print(f"Output saved to:       {target}")
+            sys.exit(0)
+        except Exception as e:
+            print(f"Export error: {e}", file=sys.stderr)
+            sys.exit(1)
 
     elif args.command == "list":
         flows = discover_flows()
@@ -204,11 +265,13 @@ def main():
             sys.exit(1)
 
         try:
-            content = resolved_path.read_text(encoding="utf-8")
-            raw_json = json.loads(content)
-            flow_def = FlowDefinition.model_validate(raw_json)
+            if resolved_path.suffix.lower() == ".md":
+                # Auto-compile to flow.json alongside flow.md
+                json_target = resolved_path.parent / "flow.json"
+                compile_markdown_to_json(resolved_path, json_target)
+            flow_def = load_flow(resolved_path)
         except Exception as e:
-            print(f"Error parsing flow JSON at '{resolved_path}': {str(e)}", file=sys.stderr)
+            print(f"Error loading flow at '{resolved_path}': {str(e)}", file=sys.stderr)
             sys.exit(1)
 
         extra_vars = {}

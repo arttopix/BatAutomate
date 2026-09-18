@@ -40,7 +40,7 @@ This flow automates the following steps:
    ```
 2. Run the flow using the BatAutomate CLI:
    ```powershell
-   batautomate run flows/benchmarks/rpachallenge_ocr/flow.json
+   batautomate run flows/examples/rpachallenge_ocr/flow.json
    ```
 
 ---

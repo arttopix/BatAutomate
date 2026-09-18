@@ -137,38 +137,44 @@ bat-studio/
 ## 5. Development Roadmap & Milestones
 
 ### Milestone 1: Backend Foundation & Project Scaffolding
-- [ ] Initialize `bat-studio/pyproject.toml` with FastAPI, Uvicorn, and `bat-core` dependency.
-- [ ] Implement `batstudio` CLI command that serves FastAPI on `http://localhost:8080`.
-- [ ] Implement REST endpoints:
+- [x] Initialize `bat-studio/pyproject.toml` with FastAPI, Uvicorn, and `bat-core` dependency.
+- [x] Implement `batstudio` CLI command that serves FastAPI on `http://localhost:8080`.
+- [x] Implement REST endpoints:
   - `GET /api/flows`: Discover and list flows across the workspace.
-  - `GET /api/flows/{flow_id}`: Fetch flow JSON definition and configuration.
-  - `POST /api/flows/{flow_id}`: Save updated flow JSON with schema validation.
+  - `GET /api/flow`: Fetch flow JSON definition and configuration.
+  - `PUT /api/flow`: Save updated flow JSON with schema validation.
+  - `PUT /api/flow/step`: Update isolated single step parameters.
   - `GET /api/actions`: Export available action registry metadata and schemas from `bat-core`.
 
 ### Milestone 2: Frontend Foundation & Resizable 3-Column Shell
-- [ ] Initialize Vite + React + TypeScript in `bat-studio/frontend/`.
-- [ ] Configure Tailwind CSS and dark-mode color scheme.
-- [ ] Implement resizable 3-column layout using `react-resizable-panels`.
-- [ ] Build Top Bar with flow selector, environment switcher, and run toolbar.
+- [x] Initialize Vite + React + TypeScript in `bat-studio/frontend/`.
+- [x] Configure sleek dark-mode aesthetic design system in `src/index.css`.
+- [x] Implement responsive 3-column workspace layout (Steps Timeline, Step Inspector, Live Context & Documentation).
+- [x] Build Top Bar with flow selector, environment switcher, and reload controls.
+- [x] Mount built production bundle directly into FastAPI backend root (`/`).
 
-### Milestone 3: Step Timeline & Schema-Driven Inspector
-- [ ] Implement `StepsTimeline` rendering sequential steps with icons, names, and status badges.
-- [ ] Implement `StepInspector` generating dynamic form inputs according to the action schema:
-  - Text fields for `selector`, `url`, `timeout`, `value`.
-  - Autocomplete suggestion for dynamic variables (`${config.*}`, `${vars.*}`).
-- [ ] Bi-directional state binding: Updates in inspector immediately reflect in the underlying `flow.json`.
-
-### Milestone 4: Persistent Browser Session & Single-Step Execution
+### Milestone 3: Interactive Browser Session & Element Picker
 - [ ] Implement `session.py` backend service maintaining persistent Playwright browser instances.
-- [ ] Implement `POST /api/session/step`: Execute a single isolated step in the active browser context.
-- [ ] Implement `ElementPicker` hook: Inject DOM highlight crosshair and return robust selector candidates.
+- [ ] Implement `POST /api/session/step`: Execute a single isolated step in the active browser context without restarting flow from step 1.
+- [ ] Implement `ElementPicker` overlay: Inject visual DOM highlight crosshair and return robust selector candidates.
 
-### Milestone 5: Live Debugger & Real-Time Telemetry
+### Milestone 4: Live Debugger & Real-Time Telemetry
 - [ ] Implement WebSocket connection streaming real-time execution events from `FlowInterpreter`.
 - [ ] Visual step progression: Highlight active step, success (green), and failure (red).
 - [ ] Implement `VariableWatcher` displaying runtime variables in real time.
 - [ ] Implement Error Telemetry: Instant modal showing error details and millisecond-accurate failure screenshots.
 
-### Milestone 6: AI Prompt Bar & Bundle Packaging
+### Milestone 5: AI Prompt Bar & Flow Copilot
 - [ ] Implement `AiPromptBar` connecting to local Ollama (`ai.prompt`) to generate or modify step definitions from natural language.
-- [ ] Implement Project Bundle Exporter: Package flow definitions, configurations, and assets into standalone archives ready for `bat-worker`.
+
+---
+
+## 6. GitOps & CI/CD Deployment Architecture (Planned)
+
+Unlike legacy RPA platforms (e.g. UiPath) that rely on opaque binary packages published to proprietary orchestrators, BAT Automate treats automation flows as **100% declarative code/JSON project bundles**:
+
+1. **Local Authoring & Tuning:** Developers design and tune selectors locally using `bat-studio`.
+2. **Git as Single Source of Truth:** Flow definitions (`flow.json`), configurations (`config.json`), and assets are committed directly to Git branches (`dev`, `main`).
+3. **Automated CI Testing:** Continuous Integration (GitHub Actions) runs automated `pytest` suites to validate flow JSON schemas and execute dry-run interpreter tests before merging.
+4. **GitOps Continuous Deployment (CD):** Orchestrator and edge workers (`bat-worker`) track Git tags, release branches, or webhooks to pull approved, versioned bundles directly into production execution environments.
+

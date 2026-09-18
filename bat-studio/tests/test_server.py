@@ -19,6 +19,13 @@ def test_health_check():
     assert data["service"] == "bat-studio"
 
 
+def test_root_serves_frontend():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "text/html" in response.headers.get("content-type", "")
+    assert "BAT Studio" in response.text
+
+
 def test_list_actions():
     response = client.get("/api/actions")
     assert response.status_code == 200
@@ -40,7 +47,7 @@ def test_list_flows():
 
 
 def test_get_rpachallenge_flow():
-    response = client.get("/api/flow", params={"path": "flows/benchmarks/rpachallenge"})
+    response = client.get("/api/flow", params={"path": "flows/examples/rpachallenge"})
     assert response.status_code == 200
     data = response.json()
     assert data["is_valid"] is True
@@ -53,7 +60,7 @@ def test_get_rpachallenge_flow():
 def test_update_flow_validation_failure():
     # Attempting to save an invalid flow with a step missing required fields ('action' and 'name')
     bad_payload = {
-        "path": "flows/benchmarks/non_existent_flow.json",
+        "path": "flows/examples/non_existent_flow.json",
         "flow": {
             "name": "Broken Flow",
             "steps": [

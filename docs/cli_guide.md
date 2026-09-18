@@ -55,10 +55,10 @@ Executes an automation flow using the Smart Flow Resolver. You can specify a flo
 batautomate run rpachallenge
 
 # Run by namespace
-batautomate run benchmarks/rpachallenge
+batautomate run examples/rpachallenge
 
 # Run by direct file path
-batautomate run flows/benchmarks/rpachallenge/flow.json
+batautomate run flows/examples/rpachallenge/flow.json
 ```
 
 ---

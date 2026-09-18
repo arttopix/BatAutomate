@@ -51,14 +51,18 @@ def main():
 
     args = parser.parse_args()
 
-    server_url = f"http://{args.host}:{args.port}/docs"
+    from pathlib import Path
+    frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+    has_frontend = frontend_dist.is_dir() and (frontend_dist / "index.html").is_file()
+
+    server_url = f"http://{args.host}:{args.port}/" if has_frontend else f"http://{args.host}:{args.port}/docs"
 
     print("==================================================")
-    print(f"BAT Studio Server v{__version__}")
-    print(f"Listening on: http://{args.host}:{args.port}")
-    print(f"Swagger API Docs: {server_url}")
+    print(f"BAT Studio v{__version__}")
+    print(f"Web Interface: http://{args.host}:{args.port}/")
+    print(f"Swagger API Docs: http://{args.host}:{args.port}/docs")
     if not args.no_browser:
-        print("Launching web browser automatically...")
+        print("Launching Studio interface in browser...")
     print("==================================================")
 
     if not args.no_browser:

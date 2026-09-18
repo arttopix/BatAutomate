@@ -26,14 +26,6 @@ app.add_middleware(
 )
 
 
-@app.get("/", include_in_schema=False)
-def root():
-    """
-    Redirect root to Swagger UI documentation.
-    """
-    return RedirectResponse(url="/docs")
-
-
 def get_workspace_root() -> Path:
     """
     Finds the root workspace directory by looking for flows/ directory.
@@ -283,3 +275,19 @@ def update_single_step(req: UpdateStepRequest):
         "message": f"Step '{req.step_id}' updated successfully",
         "step": req.step
     }
+
+
+from fastapi.staticfiles import StaticFiles
+
+# Mount built frontend SPA at root if available (after all API routes are registered)
+frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+if frontend_dist.is_dir() and (frontend_dist / "index.html").is_file():
+    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
+else:
+    @app.get("/", include_in_schema=False)
+    def root():
+        """
+        Redirect root to Swagger UI documentation when frontend is not built.
+        """
+        return RedirectResponse(url="/docs")
+
