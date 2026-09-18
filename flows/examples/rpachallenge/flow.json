@@ -9,11 +9,11 @@
   "steps": [
     {
       "id": "step_1",
-      "name": "Open RPA Challenge Webpage",
+      "name": "Open RPA Challenge Webpage #EDIT for check",
       "action": "web.open",
       "parameters": {
         "url": "${config.website}",
-        "headless": true
+        "headless": false
       }
     },
     {

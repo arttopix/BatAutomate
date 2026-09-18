@@ -75,3 +75,13 @@ To enable future autonomous collaboration between the **Agent Orchestrator** and
    - Within the JSON message envelope, an `agent_report_md` payload field conveys natural language summaries, diagnoses, and incident reports formatted in Markdown.
    - Receiving agents (e.g. Orchestrator Copilot) ingest this Markdown payload to determine recovery strategies (e.g., auto-retry vs. human escalation via LINE).
 
+---
+
+## 6. GitOps Deployment Strategy
+
+Because BatAutomate flows are designed as 100% declarative code and JSON project bundles:
+- Automation workflows are version-controlled directly in Git repositories.
+- Workflows must not be packaged as proprietary opaque binary blobs (unlike legacy RPA).
+- Deployments follow GitOps standards: Local authoring in `bat-studio` -> Git Branch / PR -> Automated CI Validation (`pytest`) -> CD Release via Git tags, release branches, or webhooks to Orchestrator and Workers.
+
+

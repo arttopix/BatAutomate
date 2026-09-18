@@ -108,7 +108,7 @@ Automations are packaged as self-contained Project Bundles, ensuring that depend
 flows/
 ├── @shared/                                # Cross-project reusable subflows (LINE Alert, SSO Login)
 │   └── line_notify.json
-└── benchmarks/
+└── examples/
     ├── rpachallenge/                       # Classic form-filling benchmark
     └── rpachallenge_ocr/                   # OCR & AI invoice extraction benchmark
         ├── flow.json                       # Main workflow entry point
@@ -135,8 +135,8 @@ BAT Automate adopts a **Decoupled Sidecar Architecture** for AI. The core engine
 - **Supported AI Actions:**
   - `ai.prompt`: Send text prompts to Ollama with guaranteed JSON schema output (`format: "json"`).
   - `ai.extract`: Extract structured entity fields from unstructured text or image files (Base64 encoding).
-- **Featured Benchmark:**
-  - Check out [flows/benchmarks/rpachallenge_ocr/](flows/benchmarks/rpachallenge_ocr/) for an automated flow that downloads invoice images via Playwright and extracts data using local Qwen 2.5 via Ollama.
+- **Featured Example:**
+  - Check out [flows/examples/rpachallenge_ocr/](flows/examples/rpachallenge_ocr/) for an automated flow that downloads invoice images via Playwright and extracts data using local Qwen 2.5 via Ollama.
 
 ---
 
@@ -190,12 +190,12 @@ BatAutomate/
 │
 ├── flows/                      # Workflows & Self-Contained Project Bundles
 │   ├── @shared/                # Reusable subflows
-│   └── benchmarks/             # Benchmark test bundles (rpachallenge, rpachallenge_ocr)
+│   └── examples/               # Example project bundles (rpachallenge, rpachallenge_ocr)
 │
 ├── logs/                       # Central Structured Execution Logs
-├── bat-studio/                 # Visual Flow Designer & UI Inspector (Planned)
+├── bat-studio/                 # Visual Flow Designer & UI Inspector (Active)
 ├── bat-orchestrator/           # Central Control Hub & Business Dashboard (Planned)
-└── bat-worker/                 # Unattended Robot Daemon (Planned)
+└── bat-worker/                 # Unattended Robot Daemon (Verified on RPi 4)
 ```
 
 ---
@@ -210,10 +210,12 @@ BatAutomate/
   - [x] Global CLI & Smart Flow Resolver (`batautomate list`, `batautomate run <flow_name>`)
   - [x] Modular Project Bundle Architecture (`flow.call`, `@shared/` namespace, `config.json`)
   - [x] Local AI Actions (`ai.prompt`, `ai.extract` with Ollama) and Playwright download action (`web.download`)
-- [ ] **Phase 2: Visual Designer & Selector Inspector (`bat-studio`)**
-  - [ ] Interactive drag-and-drop workflow canvas with React Flow inside Tauri shell
-  - [ ] Multi-layer UI element inspector (XPath, ID, Text, CSS)
-  - [ ] Local flow runner and step-by-step interactive debugger
+- [ ] **Phase 2: Developer Studio & Step Inspector (`bat-studio`)**
+  - [x] Backend API service (FastAPI) for flow discovery, schema validation, and step mutation
+  - [x] Modern 3-Column Developer Studio interface (Vite + React, Steps Timeline, Step Inspector, Live Context)
+  - [ ] Persistent browser session & isolated step execution (`POST /api/session/step`)
+  - [ ] Multi-layer UI element inspector (XPath, CSS, Text)
+  - [ ] GitOps CI/CD deployment pipeline (declarative flows version-controlled and deployed via Git)
 - [ ] **Phase 3: Central Server & Business Dashboard (`bat-orchestrator`)**
   - [ ] High-performance REST API (FastAPI) + PostgreSQL + Redis queue
   - [ ] Executive Business Dashboard: ROI calculations, hours saved tracking, transaction audit trail
@@ -255,7 +257,7 @@ batautomate list
 batautomate run rpachallenge
 
 # Run the RPA Challenge OCR benchmark with Local AI
-batautomate run flows/benchmarks/rpachallenge_ocr/flow.json
+batautomate run flows/examples/rpachallenge_ocr/flow.json
 ```
 
 ---
@@ -265,6 +267,7 @@ batautomate run flows/benchmarks/rpachallenge_ocr/flow.json
 Detailed architectural specifications, execution manuals, and standards are available in the [`docs/`](docs/) directory:
 
 - **[Actions Reference Manual](docs/actions_reference.md):** Complete catalog of built-in actions, parameters, and examples.
+- **[Flow Markdown Specification](docs/flow_markdown_spec.md):** The official rulebook, syntax rules, and compilation contract for `flow.md`.
 - **[CLI Execution Guide](docs/cli_guide.md):** Guide to `batautomate` CLI commands, parameters, and Smart Flow Resolver mechanics.
 - **[Modular Project Bundles](docs/project_bundles.md):** Self-contained flow packages, subflows, and unattended worker execution lifecycle.
 - **[Structured Logging Standards](docs/logging.md):** Hierarchical JSON log format, privacy sanitization, and error telemetry.

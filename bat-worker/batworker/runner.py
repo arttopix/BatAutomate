@@ -45,8 +45,11 @@ class WorkerRunner:
         log_dir: Optional[str] = None
     ) -> Dict[str, Any]:
         target_path = Path(flow_path_or_alias).resolve()
-        if target_path.is_dir() and (target_path / "flow.json").is_file():
-            target_path = target_path / "flow.json"
+        if target_path.is_dir():
+            if (target_path / "flow.json").is_file():
+                target_path = target_path / "flow.json"
+            elif (target_path / "flow.md").is_file():
+                target_path = target_path / "flow.md"
 
         if not target_path.is_file():
             raise FileNotFoundError(f"Flow file not found at: {flow_path_or_alias}")
@@ -61,6 +64,12 @@ class WorkerRunner:
             shutil.copytree(flow_dir, sandbox_dir, dirs_exist_ok=True)
             work_dir = sandbox_dir
             target_path = sandbox_dir / target_path.name
+
+        if target_path.suffix.lower() == ".md":
+            from batautomate.engine.markdown import compile_markdown_to_json
+            compiled_json = work_dir / "flow.json"
+            compile_markdown_to_json(target_path, compiled_json)
+            target_path = compiled_json
 
         flow_data = json.loads(target_path.read_text(encoding="utf-8"))
         flow_def = FlowDefinition(**flow_data)
