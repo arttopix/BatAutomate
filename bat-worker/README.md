@@ -1,6 +1,6 @@
-# BAT Worker
+# bat-worker
 
-The unattended robot worker daemon and edge execution engine for **BAT Automate**.
+The unattended robot worker daemon and edge execution engine for **batautomate**.
 
 ---
 
@@ -28,8 +28,8 @@ Clone the repository and run the setup script:
 
 ```bash
 # 1. Clone repository onto Raspberry Pi
-git clone https://github.com/YOUR_ACCOUNT/BatAutomate.git
-cd BatAutomate
+git clone -b dev https://github.com/arttopix/batautomate.git
+cd batautomate
 
 # 2. Grant execute permissions and run the setup script
 chmod +x bat-worker/scripts/setup_rpi.sh

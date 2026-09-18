@@ -1,6 +1,6 @@
 # Architecture Standards & Core Principles
 
-This document defines the core architecture principles, system design, and module roles for the **BAT Automate** project.
+This document defines the core architecture principles, system design, and module roles for the **batautomate** project.
 
 ---
 

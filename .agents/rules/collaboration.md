@@ -22,3 +22,10 @@ This document outlines interaction rules and working protocols between the AI De
 
 - When new patterns, architectural choices, or conventions are agreed upon, immediately update the relevant document inside `.agents/rules/`.
 - Ensure all technical documentation accurately reflects the current state of the codebase.
+
+---
+
+## 4. Git Operation Boundaries (No Autonomous Commit/Push)
+
+- The AI Agent must **NEVER** run `git commit` or `git push` on its own.
+- Always stop and wait for explicit user command before performing any commit or push actions.

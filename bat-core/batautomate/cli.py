@@ -156,7 +156,7 @@ def resolve_flow_path(flow_input: str) -> Optional[Path]:
 
 
 def main():
-    parser = argparse.ArgumentParser(prog="batautomate", description="BAT Automate - Enterprise RPA CLI Runner")
+    parser = argparse.ArgumentParser(prog="batautomate", description="batautomate - Enterprise RPA CLI Runner")
     parser.add_argument("-v", "--version", action="version", version=f"batautomate {__version__}")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
@@ -180,7 +180,7 @@ def main():
     subparsers.add_parser("list", help="List all discovered RPA Flows available to run")
 
     # Command: version
-    subparsers.add_parser("version", help="Show BAT Automate version and environment details")
+    subparsers.add_parser("version", help="Show batautomate version and environment details")
 
     # Command: install-browsers
     subparsers.add_parser("install-browsers", help="Download and install Playwright Chromium browser")
@@ -188,14 +188,14 @@ def main():
     args = parser.parse_args()
 
     if args.command == "version":
-        print(f"BAT Automate: v{__version__}")
+        print(f"batautomate:   v{__version__}")
         print(f"Python:       {platform.python_version()} ({platform.python_implementation()})")
         print(f"Platform:     {platform.system()} {platform.release()} ({platform.machine()})")
         sys.exit(0)
 
     elif args.command == "install-browsers":
         import subprocess
-        print("Installing Playwright Chromium browser for BAT Automate...")
+        print("Installing Playwright Chromium browser for batautomate...")
         res = subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"])
         if res.returncode == 0:
             print("Chromium browser successfully installed.")
@@ -253,7 +253,7 @@ def main():
             else:
                 unique_flows[resolved][2].append(alias)
 
-        print("\nAvailable Flows in BAT Automate:")
+        print("\nAvailable Flows in batautomate:")
         print("-" * 80)
         for path, (primary_alias, name, all_aliases) in sorted(
             unique_flows.items(), key=lambda item: min(item[1][2], key=len)

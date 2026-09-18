@@ -1,12 +1,12 @@
 # Flow Markdown Specification (`flow.md` Rulebook)
 
-This document establishes the official syntax rules, structural guidelines, and compilation contracts for **`flow.md`** files within **BAT Automate**.
+This document establishes the official syntax rules, structural guidelines, and compilation contracts for **`flow.md`** files within **batautomate**.
 
 ---
 
 ## 1. Vision & Core Principles
 
-In BAT Automate, automation workflows maintain a **Dual-Representation Lifecycle**:
+In batautomate, automation workflows maintain a **Dual-Representation Lifecycle**:
 
 1. **`flow.md` (Specification & Living Blueprint):**
    - High-level, human-readable, and AI-native authoring format.
@@ -248,7 +248,7 @@ Below is the complete `flow.md` specification for the **RPA Challenge Solver** b
 When prompting an LLM or Small Language Model (SLM) to generate a new workflow, provide this system prompt:
 
 ```text
-You are an expert RPA workflow architect for BAT Automate.
+You are an expert RPA workflow architect for batautomate.
 Generate a valid flow specification adhering strictly to the Flow Markdown Specification rules:
 1. Title with Level 1 Heading (# Flow Name).
 2. Level 3 Heading for each step with explicit action anchor: ### Step Name (`action.name`).

@@ -1,6 +1,6 @@
-# BAT Studio
+# bat-studio
 
-The Developer Studio, Step Inspector, and Live Debugger for **BAT Automate**.
+The Developer Studio, Step Inspector, and Live Debugger for **batautomate**.
 
 ---
 
@@ -8,7 +8,7 @@ The Developer Studio, Step Inspector, and Live Debugger for **BAT Automate**.
 
 In traditional RPA platforms, workflow authoring relies heavily on tedious visual node-dragging (drag-and-drop canvases), which often results in messy "spaghetti node" diagrams and high development overhead. 
 
-With the emergence of modern AI and Large Language Models, developers no longer need to manually drag 50 boxes to build a workflow. Instead, **BAT Studio** is designed around an **AI-Assisted, Developer-First Paradigm**:
+With the emergence of modern AI and Large Language Models, developers no longer need to manually drag 50 boxes to build a workflow. Instead, **bat-studio** is designed around an **AI-Assisted, Developer-First Paradigm**:
 
 - **AI-Accelerated Flow Authoring:** Plain-text prompt bar generates or updates `flow.json` workflows in seconds.
 - **Linear Step Timeline:** Clean, vertical sequence of steps (like Postman or GitHub Actions) rather than complex 2D wire-connecting graphs.

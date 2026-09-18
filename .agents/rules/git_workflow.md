@@ -1,6 +1,6 @@
 # Git Workflow & Commit Guidelines
 
-This document establishes Git branch naming conventions, commit message standards, and repository hygiene for **BAT Automate**.
+This document establishes Git branch naming conventions, commit message standards, and repository hygiene for **batautomate**.
 
 ---
 
@@ -45,3 +45,11 @@ Adopt Conventional Commits format for all commit messages. Emojis in commit mess
   - Execution run artifacts (`logs/*.json`, screenshots, error dumps)
   - Test caches (`.pytest_cache/`)
   - Sensitive environment variable files (`.env`, `.env.local`)
+
+---
+
+## 4. Strict Commit & Push Authorization Rule (No Autonomous Git Actions)
+
+- **Explicit User Command Mandatory:** The AI Agent is strictly prohibited from executing `git commit` or `git push` autonomously.
+- **Wait for Instructions:** Even if tests pass, features are complete, or files are staged, the agent must summarize the work and **WAIT** for explicit user instructions (e.g. *"commit"*, *"push"*, *"commit ขึ้น branch นี้"*) before running any commit or push command.
+- **No Unsolicited Pushes:** Never push to any remote branch without direct, unambiguous user authorization.

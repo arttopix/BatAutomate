@@ -1,4 +1,4 @@
-# BAT Automate
+# batautomate
 
 [![Status](https://img.shields.io/badge/Status-Active%20Development%20(WIP)-orange.svg?style=flat-square)](#)
 [![Version](https://img.shields.io/badge/Version-v0.1.0--alpha-blue.svg?style=flat-square)](#)
@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 
 > **Project Status: Active Development (Pre-Alpha / Work-in-Progress)**  
-> BAT Automate is currently under rapid, active development. Core engine APIs, subflow execution specifications, and action schemas are evolving. It is not yet intended for mission-critical production deployments. Community feedback and contributions are warmly welcome!
+> batautomate is currently under rapid, active development. Core engine APIs, subflow execution specifications, and action schemas are evolving. It is not yet intended for mission-critical production deployments. Community feedback and contributions are warmly welcome!
 
 > **Open-Source, Local AI-Native Agentic Automation Framework**  
 > Next-generation Enterprise RPA powered by Python and on-device Small Language Models (SLMs). Eliminate commercial licensing overhead with autonomous agent workflows, zero-license Excel automation, and 100% free unattended robot workers.
@@ -25,7 +25,7 @@
 
 ## 2. System Architecture (4 Core Modules)
 
-BAT Automate is designed as a decoupled, multi-tier ecosystem:
+batautomate is designed as a decoupled, multi-tier ecosystem:
 
 ```mermaid
 graph TD
@@ -200,7 +200,7 @@ BatAutomate/
 
 ---
 
-## 8. Development Roadmap
+## 9. Development Roadmap
 
 - [x] **Phase 1: Foundation & Core Engine (`bat-core`)**
   - [x] Flow JSON Schema and Pydantic v2 data models
@@ -232,9 +232,9 @@ BatAutomate/
 
 ---
 
-## 9. Prerequisites & System Requirements
+## 10. Prerequisites & System Requirements
 
-Before installing and running BAT Automate, ensure your system meets the following requirements:
+Before installing and running batautomate, ensure your system meets the following requirements:
 
 ### Core Requirements
 | Component | Minimum Version | Notes |
@@ -268,11 +268,11 @@ batautomate install-browsers
   ```bash
   ollama run qwen2.5:1.5b
   ```
-- **BAT Studio Web UI Development:** [Node.js 18+](https://nodejs.org/) and `npm` (only required if developing or building `bat-studio/frontend`).
+- **bat-studio Web UI Development:** [Node.js 18+](https://nodejs.org/) and `npm` (only required if developing or building `bat-studio/frontend`).
 
 ---
 
-## 10. Quick Start (CLI)
+## 11. Quick Start (CLI)
 
 ### Installation
 
@@ -280,8 +280,8 @@ Clone the repository and install the modules in editable mode within your Python
 
 ```bash
 # Clone repository from dev branch
-git clone -b dev https://github.com/arttopix/BatAutomate.git
-cd BatAutomate
+git clone -b dev https://github.com/arttopix/batautomate.git
+cd batautomate
 
 # Create and activate virtual environment
 python3 -m venv .venv

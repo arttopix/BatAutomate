@@ -20,7 +20,7 @@ def _launch_browser(url: str):
 def main():
     parser = argparse.ArgumentParser(
         prog="batstudio",
-        description="BAT Studio: Developer Studio, Step Inspector, and Live Debugger for BAT Automate"
+        description="batstudio: Developer Studio, Step Inspector, and Live Debugger for batautomate"
     )
     parser.add_argument(
         "--version", "-v",

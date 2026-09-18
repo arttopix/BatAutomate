@@ -1,6 +1,6 @@
 # CLI Execution Guide (batautomate)
 
-This guide documents the Command Line Interface (CLI) for BAT Automate, powered by the `batautomate` runner in `bat-core`.
+This guide documents the Command Line Interface (CLI) for batautomate, powered by the `batautomate` runner in `bat-core`.
 
 ---
 
@@ -26,7 +26,7 @@ batautomate version
 ## 2. Core Commands
 
 ### 2.1 Check Version and Environment (`version`)
-Outputs runtime details including BAT Automate version, Python runtime, operating system, and architecture:
+Outputs runtime details including batautomate version, Python runtime, operating system, and architecture:
 
 ```powershell
 batautomate version
@@ -38,7 +38,7 @@ Downloads the Chromium browser binary required for Web automation tasks:
 ```powershell
 batautomate install-browsers
 ```
-*(Note: BAT Automate also detects missing browser binaries and automatically downloads Chromium on the first web flow execution).*
+*(Note: batautomate also detects missing browser binaries and automatically downloads Chromium on the first web flow execution).*
 
 ### 2.3 List Available Flows (`list`)
 Scans the current workspace, `flows/`, `examples/`, and user cache directories to list all runnable workflows and project bundles:
