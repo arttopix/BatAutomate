@@ -232,37 +232,85 @@ BatAutomate/
 
 ---
 
-## 9. Quick Start (CLI)
+## 9. Prerequisites & System Requirements
 
-Install `batautomate` in editable mode within your Python virtual environment:
+Before installing and running BAT Automate, ensure your system meets the following requirements:
 
-```powershell
-cd bat-core
-pip install -e .
+### Core Requirements
+| Component | Minimum Version | Notes |
+| :--- | :--- | :--- |
+| **Python** | `3.10` or higher | Recommended `3.10` - `3.12` with `pip` and `venv` |
+| **Git** | `2.30+` | Required for version control and GitOps flow deployments |
+| **Operating System** | Windows 10/11, Ubuntu 20.04+, Debian 11+, Raspberry Pi OS (64-bit), macOS 12+ | Fully cross-platform |
+
+### Platform-Specific Setup
+
+#### Linux / Ubuntu / Debian / Raspberry Pi (64-bit)
+On Linux environments, ensure system packages and Playwright browser shared libraries are installed:
+```bash
+# 1. Install system packages and python venv
+sudo apt update
+sudo apt install -y git python3 python3-pip python3-venv
+
+# 2. Install Playwright Chromium with Linux system dependencies (libnss3, libasound2, etc.)
+playwright install --with-deps chromium
 ```
 
-Verify the installation and execute discoverable flows:
-
+#### Windows
+Ensure Python 3.10+ is installed with **"Add python.exe to PATH"** checked. Install Playwright browser binaries with:
 ```powershell
+batautomate install-browsers
+# or: playwright install chromium
+```
+
+### Optional Dependencies
+- **Local AI Inference (for `ai.prompt`, `ai.extract`):** Install [Ollama](https://ollama.com/) and run a local model:
+  ```bash
+  ollama run qwen2.5:1.5b
+  ```
+- **BAT Studio Web UI Development:** [Node.js 18+](https://nodejs.org/) and `npm` (only required if developing or building `bat-studio/frontend`).
+
+---
+
+## 10. Quick Start (CLI)
+
+### Installation
+
+Clone the repository and install the modules in editable mode within your Python virtual environment:
+
+```bash
+# Clone repository from dev branch
+git clone -b dev https://github.com/arttopix/BatAutomate.git
+cd BatAutomate
+
+# Create and activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\Activate.ps1
+
+# Install core engine and worker daemon in editable mode
+pip install -e ./bat-core -e ./bat-worker
+```
+
+### Verification & Execution
+
+```bash
 # Check installed version and runtime info
 batautomate version
+batworker info
 
-# Install browser binaries for Playwright
-batautomate install-browsers
-
-# List available flows (flat flows and project bundles)
+# List available flows (clean, deduplicated view)
 batautomate list
 
-# Run the RPA Challenge benchmark
+# Run the RPA Challenge benchmark (auto-compiles flow.md if needed)
 batautomate run rpachallenge
 
-# Run the RPA Challenge OCR benchmark with Local AI
-batautomate run flows/examples/rpachallenge_ocr/flow.json
+# Run with unattended worker daemon
+batworker run flows/examples/rpachallenge/
 ```
 
 ---
 
-## 10. Documentation
+## 11. Documentation
 
 Detailed architectural specifications, execution manuals, and standards are available in the [`docs/`](docs/) directory:
 
@@ -274,6 +322,6 @@ Detailed architectural specifications, execution manuals, and standards are avai
 
 ---
 
-## 11. License
+## 12. License
 
 This project is licensed under the terms of the Open Source [MIT License](LICENSE).

@@ -244,11 +244,23 @@ def main():
             print("Tip: You can specify full file path with: batautomate run <path_to_flow.json>")
             sys.exit(0)
 
+        # Deduplicate by resolved file path so the same flow isn't printed multiple times for different aliases
+        unique_flows: Dict[Path, Tuple[str, str, List[str]]] = {}
+        for alias, (path, name) in flows.items():
+            resolved = path.resolve()
+            if resolved not in unique_flows:
+                unique_flows[resolved] = (alias, name, [alias])
+            else:
+                unique_flows[resolved][2].append(alias)
+
         print("\nAvailable Flows in BAT Automate:")
-        print("-" * 65)
-        for alias, (path, name) in sorted(flows.items()):
-            print(f"  {alias:<18} | {name:<25} | {path}")
-        print("-" * 65)
+        print("-" * 80)
+        for path, (primary_alias, name, all_aliases) in sorted(
+            unique_flows.items(), key=lambda item: min(item[1][2], key=len)
+        ):
+            clean_alias = min(all_aliases, key=len)
+            print(f"  {clean_alias:<18} | {name:<35} | {path}")
+        print("-" * 80)
         print("To run a flow: batautomate run <flow_name>\n")
         sys.exit(0)
 
