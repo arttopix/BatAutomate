@@ -1,4 +1,5 @@
 import logging
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -13,10 +14,23 @@ logger = logging.getLogger("batautomate")
 
 
 def _launch_browser_with_auto_install(pw: Playwright, headless: bool) -> Browser:
+    if not headless and sys.platform.startswith("linux"):
+        if not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY"):
+            logger.warning(
+                "No display environment detected ($DISPLAY or $WAYLAND_DISPLAY is unset). "
+                "Automatically switching Playwright browser to headless mode for headless Linux/SSH."
+            )
+            headless = True
+
     try:
         return pw.chromium.launch(headless=headless)
     except Exception as e:
         err_msg = str(e)
+        if "Missing X server" in err_msg or "$DISPLAY" in err_msg:
+            logger.warning(
+                "Missing X server detected. Retrying Playwright launch in headless mode..."
+            )
+            return pw.chromium.launch(headless=True)
         if "Executable doesn't exist" in err_msg or "Please run the following command" in err_msg:
             logger.info("Playwright Chromium browser not detected. Installing Chromium automatically (first run only)...")
             res = subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"])
@@ -204,4 +218,142 @@ class WebCloseAction(BaseAction):
             context.set_variable("__playwright_pw__", None)
 
         return {"status": "closed"}
+
+
+@register_action("web.wait_for")
+class WebWaitForAction(BaseAction):
+    def execute(self, parameters: Dict[str, Any], context: ExecutionContext) -> Any:
+        page = _get_page(context)
+        selector = parameters.get("selector")
+        label = parameters.get("label")
+        state = parameters.get("state", "visible")
+        timeout = float(parameters.get("timeout", 30000))
+
+        if selector or label:
+            locator = _resolve_locator(page, parameters)
+            locator.first.wait_for(state=state, timeout=timeout)
+            return {"action": "web.wait_for", "state": state, "status": "ready"}
+        else:
+            page.wait_for_timeout(timeout)
+            return {"action": "web.wait_for", "timeout_ms": timeout, "status": "waited"}
+
+
+@register_action("web.get_attribute")
+class WebGetAttributeAction(BaseAction):
+    def execute(self, parameters: Dict[str, Any], context: ExecutionContext) -> Any:
+        page = _get_page(context)
+        attr_name = parameters.get("attribute") or parameters.get("name")
+        if not attr_name:
+            raise ValueError("Parameter 'attribute' is required for action 'web.get_attribute'.")
+
+        locator = _resolve_locator(page, parameters)
+        val = locator.first.get_attribute(attr_name)
+        return val
+
+
+@register_action("web.press")
+class WebPressAction(BaseAction):
+    def execute(self, parameters: Dict[str, Any], context: ExecutionContext) -> Any:
+        page = _get_page(context)
+        key = parameters.get("key")
+        if not key:
+            raise ValueError("Parameter 'key' is required for action 'web.press'.")
+
+        selector = parameters.get("selector")
+        label = parameters.get("label")
+
+        if selector or label:
+            locator = _resolve_locator(page, parameters)
+            locator.first.press(key)
+        else:
+            page.keyboard.press(key)
+
+        return {"action": "web.press", "key": key, "status": "pressed"}
+
+
+@register_action("web.scroll")
+class WebScrollAction(BaseAction):
+    def execute(self, parameters: Dict[str, Any], context: ExecutionContext) -> Any:
+        page = _get_page(context)
+        selector = parameters.get("selector")
+        label = parameters.get("label")
+
+        if selector or label:
+            locator = _resolve_locator(page, parameters)
+            locator.first.scroll_into_view_if_needed()
+            return {"action": "web.scroll", "target": "element", "status": "scrolled"}
+
+        direction = str(parameters.get("direction", "down")).lower()
+        amount = int(parameters.get("amount", 500))
+
+        if direction == "bottom":
+            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        elif direction == "top":
+            page.evaluate("window.scrollTo(0, 0)")
+        elif direction == "up":
+            page.evaluate(f"window.scrollBy(0, -{amount})")
+        else:  # down
+            page.evaluate(f"window.scrollBy(0, {amount})")
+
+        return {"action": "web.scroll", "direction": direction, "amount": amount, "status": "scrolled"}
+
+
+@register_action("web.hover")
+class WebHoverAction(BaseAction):
+    def execute(self, parameters: Dict[str, Any], context: ExecutionContext) -> Any:
+        page = _get_page(context)
+        timeout = float(parameters.get("timeout", 30000))
+        locator = _resolve_locator(page, parameters)
+        locator.first.hover(timeout=timeout)
+        return {"action": "web.hover", "status": "hovered"}
+
+
+@register_action("web.switch_tab")
+class WebSwitchTabAction(BaseAction):
+    def execute(self, parameters: Dict[str, Any], context: ExecutionContext) -> Any:
+        browser: Optional[Browser] = context.get_variable("__playwright_browser__")
+        if not browser or not browser.contexts:
+            raise RuntimeError("No active browser context found. Cannot switch tab.")
+
+        browser_context = browser.contexts[0]
+        pages = browser_context.pages
+        if not pages:
+            raise RuntimeError("No open tabs/pages found in browser.")
+
+        target_page = None
+        index = parameters.get("index")
+        url_pattern = parameters.get("url_pattern")
+        title = parameters.get("title")
+
+        if index is not None:
+            idx = int(index)
+            if 0 <= idx < len(pages) or -len(pages) <= idx < 0:
+                target_page = pages[idx]
+            else:
+                raise IndexError(f"Tab index {idx} out of range (total open tabs: {len(pages)}).")
+        elif url_pattern:
+            for p in pages:
+                if url_pattern in p.url:
+                    target_page = p
+                    break
+            if not target_page:
+                raise ValueError(f"No tab found matching url_pattern: '{url_pattern}'.")
+        elif title:
+            for p in pages:
+                if title.lower() in p.title().lower():
+                    target_page = p
+                    break
+            if not target_page:
+                raise ValueError(f"No tab found matching title: '{title}'.")
+        else:
+            target_page = pages[-1]
+
+        target_page.bring_to_front()
+        context.set_variable("__playwright_page__", target_page)
+        return {
+            "action": "web.switch_tab",
+            "title": target_page.title(),
+            "url": target_page.url,
+            "status": "switched"
+        }
 

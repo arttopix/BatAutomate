@@ -94,3 +94,50 @@ class CsvWriteAction(BaseAction):
         df.to_csv(target_path, index=False)
         return {"rows_written": len(df), "file_path": str(target_path)}
 
+
+@register_action("csv.read")
+class CsvReadAction(BaseAction):
+    def execute(self, parameters: Dict[str, Any], context: ExecutionContext) -> Any:
+        file_path = parameters.get("file_path")
+        delimiter = parameters.get("delimiter", ",")
+        encoding = parameters.get("encoding", "utf-8")
+        clean_headers = parameters.get("clean_headers", True)
+
+        if not file_path:
+            raise ValueError("Parameter 'file_path' is required for action 'csv.read'.")
+
+        raw_path = Path(file_path)
+        target_path = None
+        if raw_path.is_file():
+            target_path = raw_path
+        else:
+            flow_dir_str = context.get_variable("__flow_dir__")
+            if flow_dir_str:
+                flow_dir = Path(flow_dir_str)
+                candidates = [
+                    flow_dir / file_path,
+                    flow_dir.parent / file_path,
+                    flow_dir / raw_path.name,
+                ]
+                for c in candidates:
+                    if c.is_file():
+                        target_path = c
+                        break
+
+        if not target_path or not target_path.is_file():
+            raise FileNotFoundError(f"CSV file not found: {file_path}")
+
+        try:
+            df = pd.read_csv(target_path, sep=delimiter, encoding=encoding)
+        except UnicodeDecodeError:
+            # Fallback to utf-8-sig or latin1 if utf-8 fails
+            try:
+                df = pd.read_csv(target_path, sep=delimiter, encoding="utf-8-sig")
+            except Exception:
+                df = pd.read_csv(target_path, sep=delimiter, encoding="latin1")
+
+        if clean_headers:
+            df.columns = [str(c).strip() for c in df.columns]
+        df = df.where(pd.notnull(df), None)
+        return df.to_dict(orient="records")
+

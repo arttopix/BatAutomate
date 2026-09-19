@@ -11,24 +11,42 @@ This document provides a comprehensive specification of standard actions availab
    - [web.click](#webclick)
    - [web.type](#webtype)
    - [web.get_text](#webget_text)
+   - [web.get_attribute](#webget_attribute)
+   - [web.wait_for](#webwait_for)
+   - [web.press](#webpress)
+   - [web.scroll](#webscroll)
+   - [web.hover](#webhover)
+   - [web.switch_tab](#webswitch_tab)
    - [web.screenshot](#webscreenshot)
+   - [web.download](#webdownload)
    - [web.close](#webclose)
-2. [Data and Excel (`excel.*`)](#data-and-excel-excel)
+2. [Data, Excel, and CSV (`excel.*`, `csv.*`)](#data-excel-and-csv-excel-csv)
    - [excel.read](#excelread)
    - [excel.write](#excelwrite)
-3. [Control Flow and Logic (`logic.*`)](#control-flow-and-logic-logic)
+   - [csv.read](#csvread)
+   - [csv.write](#csvwrite)
+3. [File System Operations (`file.*`)](#file-system-operations-file)
+   - [file.exists](#fileexists)
+   - [file.copy](#filecopy)
+   - [file.move](#filemove)
+   - [file.delete](#filedelete)
+4. [Control Flow and Logic (`logic.*`)](#control-flow-and-logic-logic)
    - [logic.set_variable](#logicset_variable)
    - [logic.delay](#logicdelay)
    - [logic.if](#logicif)
    - [logic.loop](#logicloop)
    - [logic.append](#logicappend)
-4. [HTTP API Integration (`http.*`)](#http-api-integration-http)
+5. [HTTP API Integration (`http.*`)](#http-api-integration-http)
    - [http.request](#httprequest)
-5. [Modular Subflows and Flow Control (`flow.*`)](#modular-subflows-and-flow-control-flow)
+   - [http.download](#httpdownload)
+6. [Modular Subflows and Flow Control (`flow.*`)](#modular-subflows-and-flow-control-flow)
    - [flow.call](#flowcall)
    - [flow.return](#flowreturn)
-6. [Email Notification (`email.*`)](#email-notification-email)
+7. [Email Notification (`email.*`)](#email-notification-email)
    - [email.send](#emailsend)
+8. [AI and Local LLM (`ai.*`)](#ai-and-local-llm-ai)
+   - [ai.prompt](#aiprompt)
+   - [ai.extract](#aiextract)
 
 ---
 
@@ -133,6 +151,188 @@ Extracts visible inner text from a target element.
 
 ---
 
+### `web.get_attribute`
+Extracts an HTML attribute value (such as `href`, `src`, `value`, `class`, or `data-*`) from a target element.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `attribute` | string | Yes | - | Name of attribute to extract (e.g. `"href"`, `"src"`, `"value"`) |
+| `selector` | string | Either | - | CSS selector or XPath expression |
+| `label` | string | Either | - | Label identifier |
+
+**Example:**
+```json
+{
+  "id": "step_get_link",
+  "name": "Extract Download Link",
+  "action": "web.get_attribute",
+  "parameters": {
+    "selector": "a.download-button",
+    "attribute": "href"
+  },
+  "output_var": "file_url"
+}
+```
+
+---
+
+### `web.wait_for`
+Waits for an element to satisfy a desired state (or performs an explicit pause).
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `selector` | string | Optional | - | Target element CSS selector or XPath |
+| `label` | string | Optional | - | Target element label |
+| `state` | string | No | `"visible"` | Expected state: `"visible"`, `"attached"`, `"detached"`, `"hidden"` |
+| `timeout` | number | No | `30000` | Maximum wait timeout in milliseconds |
+
+*Note:* If neither `selector` nor `label` is specified, `web.wait_for` acts as a browser-synchronized pause for `timeout` milliseconds.
+
+**Example:**
+```json
+{
+  "id": "step_wait_modal",
+  "name": "Wait For Success Modal",
+  "action": "web.wait_for",
+  "parameters": {
+    "selector": "#success-dialog",
+    "state": "visible",
+    "timeout": 15000
+  }
+}
+```
+
+---
+
+### `web.press`
+Sends a keyboard key press or key combination to a specific element or to the active page.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `key` | string | Yes | - | Key name or chord (e.g. `"Enter"`, `"Tab"`, `"Escape"`, `"Control+A"`) |
+| `selector` | string | Optional | - | Specific element to receive keystroke (omitted for global page) |
+| `label` | string | Optional | - | Target element by adjacent label |
+
+**Example:**
+```json
+{
+  "id": "step_press_enter",
+  "name": "Submit Form via Enter Key",
+  "action": "web.press",
+  "parameters": {
+    "selector": "input#search-box",
+    "key": "Enter"
+  }
+}
+```
+
+---
+
+### `web.scroll`
+Scrolls the page in a specified direction or scrolls a specific element into visible view.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `direction` | string | No | `"down"` | Scroll direction: `"down"`, `"up"`, `"bottom"`, `"top"` |
+| `amount` | number | No | `500` | Pixels to scroll (when direction is `"down"` or `"up"`) |
+| `selector` | string | Optional | - | Scroll this specific element into view |
+| `label` | string | Optional | - | Scroll element associated with this label into view |
+
+**Example:**
+```json
+{
+  "id": "step_scroll_down",
+  "name": "Scroll Down To Load Content",
+  "action": "web.scroll",
+  "parameters": {
+    "direction": "down",
+    "amount": 800
+  }
+}
+```
+
+---
+
+### `web.hover`
+Hovers the mouse pointer over a target element to trigger dropdowns or tooltip menus.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `selector` | string | Either | - | CSS selector or XPath expression |
+| `label` | string | Either | - | Label identifier |
+| `timeout` | number | No | `30000` | Maximum hover timeout in milliseconds |
+
+**Example:**
+```json
+{
+  "id": "step_hover_menu",
+  "name": "Open Navigation Dropdown",
+  "action": "web.hover",
+  "parameters": {
+    "selector": ".nav-dropdown-trigger"
+  }
+}
+```
+
+---
+
+### `web.switch_tab`
+Switches active focus to another open tab or window in the browser context.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `index` | number | Optional | - | Zero-based index of open tab (`0` for first, `1` for second, `-1` for latest) |
+| `url_pattern` | string | Optional | - | Substring or URL pattern matching target tab |
+| `title` | string | Optional | - | Case-insensitive substring matching target page title |
+
+*Note:* If no parameters are provided, switches to the most recently opened tab.
+
+**Example:**
+```json
+{
+  "id": "step_switch_dashboard",
+  "name": "Switch to Dashboard Tab",
+  "action": "web.switch_tab",
+  "parameters": {
+    "url_pattern": "/dashboard"
+  }
+}
+```
+
+---
+
+### `web.download`
+Downloads a file by clicking an export button or resolving a direct link.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `selector` | string | Yes | - | Element triggering the download or containing `href` |
+| `target_path` | string | No | `"downloads/downloaded_file"` | Destination path for saved file |
+| `timeout` | number | No | `30000` | Download timeout in milliseconds |
+
+**Example:**
+```json
+{
+  "id": "step_download_excel",
+  "name": "Download Challenge Excel File",
+  "action": "web.download",
+  "parameters": {
+    "selector": "//a[contains(text(),'Download Excel')]",
+    "target_path": "./assets/challenge.xlsx"
+  },
+  "output_var": "download_info"
+}
+```
+
+---
+
 ### `web.screenshot`
 Captures a screenshot of the current page.
 
@@ -174,9 +374,9 @@ Closes current page, browser context, and terminates Playwright session.
 
 ---
 
-## Data and Excel (`excel.*`)
+## Data, Excel, and CSV (`excel.*`, `csv.*`)
 
-Provides zero-license Excel reading and writing via Pandas and OpenPyXL.
+Provides zero-license tabular data processing via Pandas and OpenPyXL.
 
 ### `excel.read`
 Reads an Excel sheet into an in-memory list of dictionaries (records).
@@ -224,6 +424,163 @@ Writes a list of dictionaries or single dictionary to an Excel spreadsheet.
     "file_path": "./assets/non_programmers_audit.xlsx",
     "data": "${non_programmers}",
     "sheet_name": "AuditReport"
+  }
+}
+```
+
+---
+
+### `csv.read`
+Reads a delimiter-separated text file (CSV, TSV, semicolon-separated) into a list of dictionaries.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `file_path` | string | Yes | - | Path to CSV file (resolved against bundle or absolute) |
+| `delimiter` | string | No | `","` | Field separator character (e.g. `","`, `";"`, `"\t"`) |
+| `encoding` | string | No | `"utf-8"` | File character encoding |
+| `clean_headers` | boolean | No | `true` | Strip leading and trailing whitespace from column headers |
+
+**Example:**
+```json
+{
+  "id": "step_read_csv",
+  "name": "Load Customer Records",
+  "action": "csv.read",
+  "parameters": {
+    "file_path": "./data/customers.csv",
+    "delimiter": ",",
+    "clean_headers": true
+  },
+  "output_var": "customers"
+}
+```
+
+---
+
+### `csv.write`
+Exports a list of dictionaries or single record to a CSV file.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `file_path` | string | Yes | - | Output CSV file path |
+| `data` | list / dict | Yes | `[]` | Records to export |
+| `columns` | list | No | `null` | Explicit list and order of column names |
+
+**Example:**
+```json
+{
+  "id": "step_export_csv",
+  "name": "Export Processed Data to CSV",
+  "action": "csv.write",
+  "parameters": {
+    "file_path": "./output/results.csv",
+    "data": "${results}",
+    "columns": ["id", "name", "status", "timestamp"]
+  }
+}
+```
+
+---
+
+## File System Operations (`file.*`)
+
+Built-in operations for file checking, copying, moving, and deletion. Relative paths are automatically resolved relative to the active flow bundle directory (`__flow_dir__`).
+
+### `file.exists`
+Checks whether a file or directory exists on the local filesystem, returning a boolean (`true` / `false`).
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `path` | string | Yes | - | File or directory path to check |
+
+**Example:**
+```json
+{
+  "id": "step_check_file",
+  "name": "Check If Input File Exists",
+  "action": "file.exists",
+  "parameters": {
+    "path": "./input/data.csv"
+  },
+  "output_var": "is_input_ready"
+}
+```
+
+---
+
+### `file.copy`
+Copies a file or an entire directory tree to a target destination.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `source` | string | Yes | - | Source file or folder path |
+| `destination` | string | Yes | - | Destination file or folder path |
+| `overwrite` | boolean | No | `true` | Overwrite destination if it already exists |
+
+**Example:**
+```json
+{
+  "id": "step_backup_file",
+  "name": "Backup Report",
+  "action": "file.copy",
+  "parameters": {
+    "source": "./output/report.xlsx",
+    "destination": "./backups/report_backup.xlsx",
+    "overwrite": true
+  }
+}
+```
+
+---
+
+### `file.move`
+Moves or renames a file or directory.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `source` | string | Yes | - | Source file or folder path |
+| `destination` | string | Yes | - | Destination file or folder path |
+| `overwrite` | boolean | No | `true` | Overwrite destination if it already exists |
+
+**Example:**
+```json
+{
+  "id": "step_archive_file",
+  "name": "Move Processed File to Archive",
+  "action": "file.move",
+  "parameters": {
+    "source": "./input/orders.csv",
+    "destination": "./archive/orders_processed.csv",
+    "overwrite": true
+  }
+}
+```
+
+---
+
+### `file.delete`
+Deletes a file or recursively removes a directory.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `path` | string | Yes | - | Path of file or directory to remove |
+| `missing_ok` | boolean | No | `true` | Do not raise an error if target path does not exist |
+
+**Example:**
+```json
+{
+  "id": "step_cleanup_temp",
+  "name": "Delete Temporary Files",
+  "action": "file.delete",
+  "parameters": {
+    "path": "./temp/working_cache.tmp",
+    "missing_ok": true
   }
 }
 ```
@@ -443,6 +800,32 @@ Executes an HTTP request and outputs status code, response headers, and body.
 
 ---
 
+### `http.download`
+Downloads a file from an HTTP/HTTPS URL directly to the filesystem without launching a browser.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `url` | string | Yes | - | Direct HTTP/HTTPS file URL to download |
+| `target_path` | string | Yes | - | Local path to save the downloaded file |
+| `timeout` | number | No | `60` | Network download timeout in seconds |
+
+**Example:**
+```json
+{
+  "id": "step_download_pdf",
+  "name": "Download Invoice PDF",
+  "action": "http.download",
+  "parameters": {
+    "url": "https://example.com/files/invoice_102.pdf",
+    "target_path": "./downloads/invoice_102.pdf"
+  },
+  "output_var": "downloaded_file"
+}
+```
+
+---
+
 ## Modular Subflows and Flow Control (`flow.*`)
 
 Enables breaking large enterprise automations into clean, isolated, reusable child flows (subflows) located within the same project bundle or across global `@shared/` components. Adopts **Contract-First Design (`flow.return` + `output_var`)**, matching modern AI agent tool-calling paradigms.
@@ -554,5 +937,72 @@ Constructs and dispatches an email message with support for plain text, HTML bod
     "dry_run": false
   },
   "output_var": "email_result"
+}
+```
+
+---
+
+## AI and Local LLM (`ai.*`)
+
+Integrates local LLMs powered by Ollama (or compatible HTTP endpoints like vLLM) for intelligent unstructured text understanding, zero-shot extraction, and decision making without cloud token costs.
+
+### `ai.prompt`
+Sends a prompt to an Ollama model with optional JSON schema enforcement and image inputs.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `prompt` | string | Yes | - | Prompt text or user query |
+| `model` | string | No | `"qwen2.5:1.5b"` | Local LLM model tag |
+| `system` | string | No | `null` | System instruction prompt |
+| `format` | string | No | `null` | Set to `"json"` for structured JSON output |
+| `images` | list | No | `[]` | List of image paths for vision models |
+| `temperature` | number | No | `0.1` | Sampling temperature |
+| `base_url` | string | No | `"http://localhost:11434"` | Ollama service base URL |
+| `timeout` | number | No | `60` | Request timeout in seconds |
+
+**Example:**
+```json
+{
+  "id": "step_summarize_lead",
+  "name": "Classify Lead Intent",
+  "action": "ai.prompt",
+  "parameters": {
+    "model": "qwen2.5:1.5b",
+    "prompt": "Classify whether this inquiry is urgent: '${email_body}'",
+    "format": "json"
+  },
+  "output_var": "lead_analysis"
+}
+```
+
+---
+
+### `ai.extract`
+Specialized action that extracts structured fields directly from raw unstructured text.
+
+**Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `text` | string | Yes | - | Raw text, email, or OCR string to extract from |
+| `schema` | dict | Yes | - | Key-description dictionary of target fields |
+| `model` | string | No | `"qwen2.5:1.5b"` | Local LLM model tag |
+| `base_url` | string | No | `"http://localhost:11434"` | Ollama service base URL |
+
+**Example:**
+```json
+{
+  "id": "step_extract_invoice",
+  "name": "Extract Invoice Data",
+  "action": "ai.extract",
+  "parameters": {
+    "text": "${ocr_text}",
+    "schema": {
+      "invoice_number": "Invoice identifier number",
+      "total_amount": "Total due as float number",
+      "due_date": "Due date in YYYY-MM-DD"
+    }
+  },
+  "output_var": "invoice"
 }
 ```
